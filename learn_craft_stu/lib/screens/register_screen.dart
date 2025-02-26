@@ -4,6 +4,7 @@ import 'chat_screen.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
+
   const RegisterScreen({super.key});
 
   @override
