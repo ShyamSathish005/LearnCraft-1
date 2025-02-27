@@ -4,22 +4,20 @@ import 'dart:math';
 class QuizScreen extends StatefulWidget {
   const QuizScreen({super.key});
 
-
+  @override
   _QuizScreenState createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   final List<Color> _initialButtonColors = [
-    Colors.lightBlue[200]!, // Button 1
-    Colors.purple[200]!,    // Button 2
-    Colors.yellow[200]!,    // Button 3
-    Colors.lightBlue[200]!, // Button 4
-    Colors.purple[200]!,    // Button 5
-    Colors.pink[200]!,      // Button 6 (coral-like)
+    Colors.lightBlue[200]!,
+    Colors.purple[200]!,
+    Colors.yellow[200]!,
   ];
 
-  List<Color> _buttonColors = []; // Dynamic color list for changes
-  List<Offset> _buttonPositions = []; // Track positions for dragging
+  List<Color> _buttonColors = [];
+  List<Offset> _buttonPositions = [];
+  List<String> _buttonLabels = [];
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
   late AnimationController _pulseController;
@@ -27,16 +25,18 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
 
-
+  @override
   void initState() {
     super.initState();
     _buttonColors = List.from(_initialButtonColors);
     _buttonPositions = List.generate(_initialButtonColors.length, (index) {
       return Offset(
-        (index % 2) * 150 + 50, // Initial X position (staggered for visibility)
-        (index ~/ 2) * 100 + 100, // Initial Y position (stack vertically)
+        (index % 2) * 150 + 50,
+        (index ~/ 2) * 100 + 100,
       );
     });
+    _buttonLabels = ["Chat", "Talk", "Speak"];
+
     _scaleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -72,7 +72,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     _glowController.forward();
   }
 
-
+  @override
   void dispose() {
     _scaleController.dispose();
     _pulseController.dispose();
@@ -80,9 +80,19 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  void _addNewButton(String label) {
+    setState(() {
+      _buttonColors.add(Colors.primaries[Random().nextInt(Colors.primaries.length)][200]!);
+      _buttonPositions.add(Offset(
+        Random().nextDouble() * (MediaQuery.of(context).size.width - 80),
+        Random().nextDouble() * (MediaQuery.of(context).size.height - 40),
+      ));
+      _buttonLabels.add(label);
+    });
+  }
+
   void _onDragUpdate(int index, Offset newPosition) {
     setState(() {
-      // Clamp x and y coordinates individually
       double newDx = newPosition.dx.clamp(0, MediaQuery.of(context).size.width - 80);
       double newDy = newPosition.dy.clamp(0, MediaQuery.of(context).size.height - 40);
       _buttonPositions[index] = Offset(newDx, newDy);
@@ -92,100 +102,86 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
   void _checkForCombination(int index) {
     Offset currentPosition = _buttonPositions[index];
-    Color newColor = _buttonColors[index];
-    List<int> overlappingIndices = [];
+    Color currentColor = _buttonColors[index];
+    String currentLabel = _buttonLabels[index];
+    int? overlappingIndex;
 
     for (int i = 0; i < _buttonPositions.length; i++) {
       if (i != index && _isOverlapping(currentPosition, _buttonPositions[i])) {
-        overlappingIndices.add(i);
+        overlappingIndex = i;
+        break;
       }
     }
 
-    if (overlappingIndices.isNotEmpty) {
-      // Combine colors of all overlapping buttons
-      int totalRed = newColor.red;
-      int totalGreen = newColor.green;
-      int totalBlue = newColor.blue;
-      int count = 1; // Include the current button
-
-      for (int i in overlappingIndices) {
-        Color otherColor = _buttonColors[i];
-        totalRed += otherColor.red;
-        totalGreen += otherColor.green;
-        totalBlue += otherColor.blue;
-        count++;
-      }
-
-      // Average the colors
-      int r = totalRed ~/ count;
-      int g = totalGreen ~/ count;
-      int b = totalBlue ~/ count;
-      newColor = Color.fromRGBO(r, g, b, 1.0);
-
-      _triggerTransformAnimation(index, overlappingIndices, newColor);
+    if (overlappingIndex != null) {
+      _triggerMergeAnimation(index, overlappingIndex, currentColor, currentLabel);
     }
   }
 
-  void _triggerTransformAnimation(int index1, List<int> indices, Color newColor) {
-    _scaleController.forward().then((_) {
-      _scaleController.reverse();
-    });
+  void _triggerMergeAnimation(int index1, int index2, Color currentColor, String currentLabel) {
+    _scaleController.forward().then((_) => _scaleController.reverse());
     _pulseController.reset();
     _pulseController.forward();
-    _glowController.reset();
+    _glowController.reset(); // Fixed the typo here
     _glowController.forward();
 
     setState(() {
-      // Calculate the average position of all involved buttons
-      double totalX = _buttonPositions[index1].dx;
-      double totalY = _buttonPositions[index1].dy;
-      int count = 1;
+      Color otherColor = _buttonColors[index2];
+      String otherLabel = _buttonLabels[index2];
+      double newX = (_buttonPositions[index1].dx + _buttonPositions[index2].dx) / 2;
+      double newY = (_buttonPositions[index1].dy + _buttonPositions[index2].dy) / 2;
+      Offset newPosition = Offset(
+        newX.clamp(0, MediaQuery.of(context).size.width - 80),
+        newY.clamp(0, MediaQuery.of(context).size.height - 40),
+      );
 
-      for (int i in indices) {
-        totalX += _buttonPositions[i].dx;
-        totalY += _buttonPositions[i].dy;
-        count++;
-      }
+      // Merge colors
+      int r = (currentColor.red + otherColor.red) ~/ 2;
+      int g = (currentColor.green + otherColor.green) ~/ 2;
+      int b = (currentColor.blue + otherColor.blue) ~/ 2;
+      Color newColor = Color.fromRGBO(r, g, b, 1.0);
 
-      // Clamp x and y coordinates individually
-      double newDx = (totalX / count).clamp(0, MediaQuery.of(context).size.width - 80);
-      double newDy = (totalY / count).clamp(0, MediaQuery.of(context).size.height - 40);
-      Offset newPosition = Offset(newDx, newDy);
+      // Merge labels into a single word
+      String newLabel = currentLabel + otherLabel;
 
-      // Remove old buttons and create a new single button
-      List<int> buttonsToRemove = [index1, ...indices];
-      buttonsToRemove.sort((a, b) => b.compareTo(a)); // Sort in descending order for safe removal
-
+      // Remove old buttons (in descending order to avoid index issues)
+      List<int> buttonsToRemove = [index1, index2]..sort((a, b) => b.compareTo(a));
       for (int i in buttonsToRemove) {
         _buttonColors.removeAt(i);
         _buttonPositions.removeAt(i);
+        _buttonLabels.removeAt(i);
       }
 
-      // Add the new transformed button
+      // Add merged button
       _buttonColors.add(newColor);
       _buttonPositions.add(newPosition);
+      _buttonLabels.add(newLabel);
+
+      // Notify user of the merge
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Merged into: $newLabel")),
+      );
+
+      // Add a new button to continue the chat
+      _addNewButton("Next${_buttonLabels.length + 1}");
     });
   }
 
   bool _isOverlapping(Offset pos1, Offset pos2) {
-    const double buttonSize = 80; // Width and height of buttons
-    const double overlapThreshold = 20; // Allow slight overlap for combination
+    const double buttonSize = 80;
+    const double overlapThreshold = 20;
     return (pos1.dx - pos2.dx).abs() < buttonSize - overlapThreshold &&
         (pos1.dy - pos2.dy).abs() < buttonSize - overlapThreshold;
   }
 
-  // Infinite scrolling background with random colors
   Widget _buildInfiniteScrollBackground() {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 5000), // Slow scroll effect
+      duration: const Duration(milliseconds: 5000),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.blue[100]!,
-          ],
-          stops: const [0.0, 0.3, 0.6, 1.0],
+          colors: [Colors.blue[100]!, Colors.purple[100]!],
         ),
       ),
       child: CustomPaint(
@@ -195,13 +191,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     );
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Infinite scrolling background
           _buildInfiniteScrollBackground(),
-          // Draggable buttons
           ...List.generate(_buttonColors.length, (index) {
             return Positioned(
               left: _buttonPositions[index].dx,
@@ -209,6 +204,14 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               child: _buildDraggableButton(index),
             );
           }),
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton(
+              onPressed: () => _addNewButton("Chat${_buttonLabels.length + 1}"),
+              child: const Icon(Icons.add),
+            ),
+          ),
         ],
       ),
     );
@@ -225,19 +228,22 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           return Transform(
             transform: Matrix4.identity()
               ..scale(_scaleAnimation.value * _pulseAnimation.value)
-              ..rotateZ(_glowAnimation.value * 0.1), // Slight rotation for glow effect
+              ..rotateZ(_glowAnimation.value * 0.1),
             child: Container(
-              width: 80, // Smaller size for Neal.fun-like compactness
-              height: 40, // Smaller height
+              width: 80,
+              height: 40,
               decoration: BoxDecoration(
                 color: _buttonColors[index],
-                borderRadius: BorderRadius.circular(20), // Rounded corners
-                border: Border.all(
-                  color: Colors.black.withOpacity(0.2), // Thin stroke
-                  width: 1, // Thin stroke width
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black.withOpacity(0.2), width: 1),
+              ),
+              child: Center(
+                child: Text(
+                  _buttonLabels[index],
+                  style: const TextStyle(fontSize: 12, color: Colors.black),
+                  textAlign: TextAlign.center,
                 ),
               ),
-              child: Container(), // No text, just color
             ),
           );
         },
@@ -246,13 +252,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   }
 }
 
-// Custom painter for infinite scroll effect (simulating movement)
 class _InfiniteScrollPainter extends CustomPainter {
+  @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = Colors.grey.withOpacity(0.1)
       ..strokeWidth = 2;
-
     double offsetY = DateTime.now().millisecondsSinceEpoch % size.height;
     for (int i = -1; i <= 1; i++) {
       canvas.drawLine(
@@ -263,5 +268,10 @@ class _InfiniteScrollPainter extends CustomPainter {
     }
   }
 
+  @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+void main() {
+  runApp(const MaterialApp(home: QuizScreen()));
 }

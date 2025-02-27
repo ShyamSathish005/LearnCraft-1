@@ -2,16 +2,17 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '';
 
 class GeminiService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GenerativeModel _model = GenerativeModel(
-    model: 'gemini-2.0-flash', // Use a supported model (confirmed from Quick Start guide)
-    apiKey: 'AIzaSyCDGana6U0f7kre53WTFFYxayPlYAcVAJA', // Your actual API key (already provided)
+    model: 'gemini-2.0-flash',
+    apiKey: 'AIzaSyCDGana6U0f7kre53WTFFYxayPlYAcVAJA',
   );
 
-  /// Retrieves a response from the Gemini API for a given prompt.
+
   Future<String> getGeminiResponse(String prompt) async {
     try {
       final User? user = _auth.currentUser;
