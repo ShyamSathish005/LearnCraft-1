@@ -8,7 +8,8 @@ class TeachScreen extends StatefulWidget {
   State<TeachScreen> createState() => _TeachScreenState();
 }
 
-class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin {
+class _TeachScreenState extends State<TeachScreen>
+    with TickerProviderStateMixin {
   List<Color> _buttonColors = [];
   List<Offset> _buttonPositions = [];
   List<String> _buttonLabels = [];
@@ -60,7 +61,6 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
   }
 
   void _initializeButtons() {
-    // Predefined Linear Regression keywords
     const initialLabels = [
       "Slope",
       "Intercept",
@@ -72,14 +72,11 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     setState(() {
       _buttonColors = List.generate(
         initialLabels.length,
-            (index) => Colors.primaries[index % Colors.primaries.length][200]!,
+        (index) => Colors.primaries[index % Colors.primaries.length][200]!,
       );
       _buttonPositions = List.generate(
         initialLabels.length,
-            (index) => Offset(
-          (index % 3) * 100 + 40, // Adjusted for visibility
-          (index ~/ 3) * 60 + 80, // Adjusted for visibility
-        ),
+        (index) => Offset((index % 3) * 100 + 40, (index ~/ 3) * 60 + 80),
       );
       _buttonLabels = List.from(initialLabels);
     });
@@ -87,8 +84,14 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
 
   void _onDragUpdate(int index, Offset newPosition) {
     setState(() {
-      double newDx = newPosition.dx.clamp(0, MediaQuery.of(context).size.width - 80);
-      double newDy = newPosition.dy.clamp(0, MediaQuery.of(context).size.height - 80);
+      double newDx = newPosition.dx.clamp(
+        0,
+        MediaQuery.of(context).size.width - 80,
+      );
+      double newDy = newPosition.dy.clamp(
+        0,
+        MediaQuery.of(context).size.height - 80,
+      );
       _buttonPositions[index] = Offset(newDx, newDy);
       _checkForCombination(index);
     });
@@ -108,11 +111,21 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     }
 
     if (overlappingIndex != null) {
-      _triggerMergeAnimation(index, overlappingIndex, currentColor, currentLabel);
+      _triggerMergeAnimation(
+        index,
+        overlappingIndex,
+        currentColor,
+        currentLabel,
+      );
     }
   }
 
-  void _triggerMergeAnimation(int index1, int index2, Color currentColor, String currentLabel) {
+  void _triggerMergeAnimation(
+    int index1,
+    int index2,
+    Color currentColor,
+    String currentLabel,
+  ) {
     _scaleController.forward().then((_) => _scaleController.reverse());
     _pulseController.reset();
     _pulseController.forward();
@@ -122,8 +135,10 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     setState(() {
       Color otherColor = _buttonColors[index2];
       String otherLabel = _buttonLabels[index2];
-      double newX = (_buttonPositions[index1].dx + _buttonPositions[index2].dx) / 2;
-      double newY = (_buttonPositions[index1].dy + _buttonPositions[index2].dy) / 2;
+      double newX =
+          (_buttonPositions[index1].dx + _buttonPositions[index2].dx) / 2;
+      double newY =
+          (_buttonPositions[index1].dy + _buttonPositions[index2].dy) / 2;
       Offset newPosition = Offset(
         newX.clamp(0, MediaQuery.of(context).size.width - 80),
         newY.clamp(0, MediaQuery.of(context).size.height - 80),
@@ -136,7 +151,8 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
 
       String newLabel = _generateMeaningfulMerge(currentLabel, otherLabel);
 
-      List<int> buttonsToRemove = [index1, index2]..sort((a, b) => b.compareTo(a));
+      List<int> buttonsToRemove = [index1, index2]
+        ..sort((a, b) => b.compareTo(a));
       for (int i in buttonsToRemove) {
         _buttonColors.removeAt(i);
         _buttonPositions.removeAt(i);
@@ -147,26 +163,30 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
       _buttonPositions.add(newPosition);
       _buttonLabels.add(newLabel);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Merged into: $newLabel")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Merged into: $newLabel")));
     });
   }
 
   String _generateMeaningfulMerge(String label1, String label2) {
-    // Meaningful merges for Linear Regression
-    if ((label1 == "Slope" && label2 == "Intercept") || (label1 == "Intercept" && label2 == "Slope")) {
+    if ((label1 == "Slope" && label2 == "Intercept") ||
+        (label1 == "Intercept" && label2 == "Slope")) {
       return "LineEquation";
-    } else if ((label1 == "Error" && label2 == "Prediction") || (label1 == "Prediction" && label2 == "Error")) {
+    } else if ((label1 == "Error" && label2 == "Prediction") ||
+        (label1 == "Prediction" && label2 == "Error")) {
       return "Residual";
-    } else if ((label1 == "Data" && label2 == "Fit") || (label1 == "Fit" && label2 == "Data")) {
+    } else if ((label1 == "Data" && label2 == "Fit") ||
+        (label1 == "Fit" && label2 == "Data")) {
       return "Model";
-    } else if ((label1 == "Slope" && label2 == "Error") || (label1 == "Error" && label2 == "Slope")) {
+    } else if ((label1 == "Slope" && label2 == "Error") ||
+        (label1 == "Error" && label2 == "Slope")) {
       return "SlopeError";
-    } else if ((label1 == "Intercept" && label2 == "Error") || (label1 == "Error" && label2 == "Intercept")) {
-      return "InterceptError";
+    } else if ((label1 == "Intercept" && label2 == "Error") ||
+        (label1 == "Error" && label2 == "Intercept")) {
+      return "Error of Intercept";
     } else {
-      return "$label1$label2"; // Default concatenation
+      return "$label1$label2";
     }
   }
 
@@ -182,43 +202,58 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     String explanation;
     switch (label) {
       case "Slope":
-        explanation = "Slope is the steepness of the line in linear regression.";
+        explanation =
+            "Slope is the steepness or rate of change of the line in linear regression.";
         break;
       case "Intercept":
-        explanation = "Intercept is where the line crosses the y-axis.";
+        explanation =
+            "Intercept is the point where the regression line crosses the y-axis.";
         break;
       case "Error":
-        explanation = "Error is the difference between actual and predicted values.";
+        explanation =
+            "Error is the difference between the actual data points and the predicted values.";
         break;
       case "Prediction":
-        explanation = "Prediction is the value estimated by the regression model.";
+        explanation =
+            "Prediction is the value estimated by the linear regression model for a given input.";
         break;
       case "Data":
-        explanation = "Data is the set of points used to build the model.";
+        explanation =
+            "Data is the collection of observations used to create the regression model.";
         break;
       case "Fit":
-        explanation = "Fit is how well the line matches the data.";
+        explanation =
+            "Fit describes how well the regression line matches the data points.";
         break;
       case "LineEquation":
-        explanation = "LineEquation is the formula y = mx + b.";
+        explanation =
+            "LineEquation is the formula y = mx + b, combining slope and intercept.";
         break;
       case "Residual":
-        explanation = "Residual is the error between predicted and actual values.";
+        explanation =
+            "Residual is the error between a predicted value and the actual value.";
         break;
       case "Model":
-        explanation = "Model is the fitted line representing the data.";
+        explanation =
+            "Model is the mathematical representation of the data using a regression line.";
         break;
       case "SlopeError":
-        explanation = "SlopeError is the uncertainty in the slope estimate.";
+        explanation =
+            "SlopeError is the uncertainty or variability in the slope estimate.";
         break;
       case "InterceptError":
-        explanation = "InterceptError is the uncertainty in the intercept estimate.";
+        explanation =
+            "InterceptError is the uncertainty or variability in the intercept estimate.";
         break;
       default:
-        explanation = "$label is a combined concept in linear regression.";
+        explanation =
+            "$label is a concept derived from combining terms in linear regression.";
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(explanation)),
+      SnackBar(
+        content: Text(explanation),
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -261,19 +296,27 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         _onDragUpdate(index, _buttonPositions[index] + details.delta);
       },
       child: AnimatedBuilder(
-        animation: Listenable.merge([_scaleController, _pulseController, _glowController]),
+        animation: Listenable.merge([
+          _scaleController,
+          _pulseController,
+          _glowController,
+        ]),
         builder: (context, child) {
           return Transform(
-            transform: Matrix4.identity()
-              ..scale(_scaleAnimation.value * _pulseAnimation.value)
-              ..rotateZ(_glowAnimation.value * 0.1),
+            transform:
+                Matrix4.identity()
+                  ..scale(_scaleAnimation.value * _pulseAnimation.value)
+                  ..rotateZ(_glowAnimation.value * 0.1),
             child: Container(
               width: 80,
               height: 40,
               decoration: BoxDecoration(
                 color: _buttonColors[index],
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black.withOpacity(0.2), width: 1),
+                border: Border.all(
+                  color: Colors.black.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
               child: Center(
                 child: Text(
