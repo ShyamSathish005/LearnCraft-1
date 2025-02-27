@@ -7,8 +7,8 @@ class GeminiService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GenerativeModel _model = GenerativeModel(
-    model: 'gemini-2.0-flash', // Use a supported model (confirmed from Quick Start guide)
-    apiKey: 'YOUR_VALID_GEMINI_API_KEY_HERE', // Replace with your actual API key
+    model: 'gemini-2.0-flash', 
+    apiKey: 'AIzaSyDJRBuFdt6s76vyi1uJAZ1oNAqbPjACSOQ',
   );
 
   Future<String> getGeminiResponse(String prompt) async {
