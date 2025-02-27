@@ -7,7 +7,7 @@ class GeminiService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GenerativeModel _model = GenerativeModel(
-    model: 'gemini-pro',
+    model: 'gemini-2.0-flash',
     // Replace with your actual Google Generative AI API key
     apiKey: 'AIzaSyCDGana6U0f7kre53WTFFYxayPlYAcVAJA', // Replace with your actual key
   );

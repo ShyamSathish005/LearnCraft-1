@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:learn_craft_stu/screens/register_screen.dart';
-import 'login_screen.dart';
-import 'chat_screen.dart';
+import 'package:learn_craft_stu/screens/authentication_screens/register_screen.dart';
+import '../authentication_screens/login_screen.dart';
+import '../chat_screens/chat_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

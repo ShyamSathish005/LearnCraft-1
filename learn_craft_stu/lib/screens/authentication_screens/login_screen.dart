@@ -1,8 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import 'chat_screen.dart';
-import 'register_screen.dart';
+import '../../services/auth_service.dart';
+import '../chat_screens/chat_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,31 +12,83 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController identifierController = TextEditingController(); // For email or username
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
   Future<void> login() async {
+    if (identifierController.text.isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please enter an identifier and password")),
+      );
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
 
     try {
-      final user = await AuthService().loginUser(emailController.text, passwordController.text);
+      final String identifier = identifierController.text.trim();
+      String? email;
+
+      // Query Firestore to find the user by email or username
+      final QuerySnapshot userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: identifier)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isEmpty) {
+        // If no email match, try username
+        final QuerySnapshot usernameQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('username', isEqualTo: identifier)
+            .limit(1)
+            .get();
+
+        if (usernameQuery.docs.isEmpty) {
+          throw FirebaseAuthException(code: 'user-not-found', message: 'No user found with that email or username');
+        }
+        email = usernameQuery.docs.first['email'] as String?;
+      } else {
+        email = userQuery.docs.first['email'] as String?;
+      }
+
+      if (email == null) {
+        throw FirebaseAuthException(code: 'user-not-found', message: 'User not found');
+      }
+
+      debugPrint("Attempting login with email: $email");
+
+      // Use the email to log in via Firebase Authentication
+      final user = await AuthService().loginUser(email, passwordController.text);
       if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ChatScreen()),
-        );
+        debugPrint("User logged in: ${user.uid}, Email verified: ${user.emailVerified}");
+
+        // Optionally skip email verification for testing or if not enforced
+        if (user.emailVerified) {
+          Navigator.pushReplacementNamed(context, '/chat'); // Navigate to ChatScreen if verified
+        } else {
+          _showVerificationDialog();
+        }
       }
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-not-verified') {
-        _showVerificationDialog();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Invalid email or password")),
-        );
+      String errorMessage = "Invalid email/username or password";
+      if (e.code == 'user-not-found') {
+        errorMessage = "No user found with that email or username";
+      } else if (e.code == 'wrong-password') {
+        errorMessage = "Incorrect password";
       }
+      debugPrint("Login error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    } on FirebaseException catch (e) {
+      debugPrint("Firestore or Firebase error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An error occurred. Please try again: $e")),
+      );
     } finally {
       setState(() {
         isLoading = false;
@@ -60,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           TextButton(
             onPressed: () async {
-              await AuthService().resendVerificationEmail(emailController.text);
+              await AuthService().resendVerificationEmail(identifierController.text);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("Verification email resent. Please check your inbox.")),
@@ -78,18 +130,18 @@ class _LoginScreenState extends State<LoginScreen> {
     while (true) {
       await Future.delayed(Duration(seconds: 3));
       bool isVerified = await AuthService().isEmailVerified();
+      debugPrint("Checking email verification: $isVerified");
       if (isVerified) {
         try {
-          final user = await AuthService().loginUser(emailController.text, passwordController.text);
+          final user = await AuthService().loginUser(identifierController.text, passwordController.text);
           if (user != null) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => ChatScreen()),
-            );
+            debugPrint("Email verified, navigating to ChatScreen");
+            Navigator.pushReplacementNamed(context, '/chat'); // Navigate to ChatScreen
           }
         } catch (e) {
+          debugPrint("Login after verification error: $e");
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Login failed after verification. Please try again.")),
+            SnackBar(content: Text("Login failed after verification. Please try again: $e")),
           );
         }
         break;
@@ -133,9 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   SizedBox(height: 30),
                   TextField(
-                    controller: emailController,
+                    controller: identifierController,
                     decoration: InputDecoration(
-                      hintText: "Email",
+                      hintText: "Email or Username",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide(color: Colors.blue[900]!),
@@ -196,14 +248,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  Text(
-                    "Create new account",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: Colors.blue[900],
-                      decoration: TextDecoration.underline,
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/register'); // Use named route for RegisterScreen
+                    },
+                    child: Text(
+                      "Create new account",
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        color: Colors.blue[900],
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 20),
                   Text(

@@ -1,6 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../services/gemini_service.dart'; // Import GeminiService for chat functionality
-import 'package:firebase_auth/firebase_auth.dart'; // Add FirebaseAuth for authentication check
+import '../../services/gemini_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -14,25 +15,64 @@ class _ChatScreenState extends State<ChatScreen>
   bool isExpanded = false;
   bool isTyping = false;
   final TextEditingController textController = TextEditingController();
-  final GeminiService _geminiService = GeminiService(); // Initialize GeminiService
-  final List<Map<String, String>> _messages = []; // Store chat messages locally
-  final User? _user = FirebaseAuth.instance.currentUser; // Get current user
+  final GeminiService _geminiService = GeminiService();
+  final List<Map<String, String>> _messages = [];
+  final User? _user = FirebaseAuth.instance.currentUser;
+  String? _username;
 
   @override
   void initState() {
     super.initState();
     if (_user == null) {
-      // Handle unauthenticated user (redirect to login or show error)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please log in to use the chat.")),
-      );
+      _showLoginRequired();
       return;
     }
-    _loadChatHistory(); // Load existing chat history from Firestore
+    _loadUserDetails();
+    _loadChatHistory();
+  }
+
+  void _showLoginRequired() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text("Authentication Required"),
+        content: Text("Please log in to use the chat."),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _loadUserDetails() async {
+    if (_user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_user!.uid)
+          .get();
+      if (doc.exists) {
+        setState(() {
+          _username = doc.data()?['username'] as String?;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading user details: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading user details: $e")),
+      );
+    }
   }
 
   void _loadChatHistory() async {
-    if (_user == null) return; // Ensure user is authenticated
+    if (_user == null) return;
     try {
       _geminiService.getChatHistory().listen((snapshot) {
         setState(() {
@@ -44,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen>
         });
       });
     } catch (e) {
-      debugPrint("Error loading chat history: $e"); // Use debugPrint for better logging
+      debugPrint("Error loading chat history: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error loading chat history: $e")),
       );
@@ -53,9 +93,7 @@ class _ChatScreenState extends State<ChatScreen>
 
   void sendMessage() async {
     if (_user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please log in to send messages.")),
-      );
+      _showLoginRequired();
       return;
     }
 
@@ -68,15 +106,15 @@ class _ChatScreenState extends State<ChatScreen>
     });
 
     try {
-      debugPrint("Sending prompt to Gemini: ${textController.text}"); // Debug log
+      debugPrint("Sending prompt to Gemini: ${textController.text}");
       String response = await _geminiService.getGeminiResponse(textController.text);
-      debugPrint("Gemini response received: $response"); // Debug log
+      debugPrint("Gemini response received: $response");
       setState(() {
         isTyping = false;
         _messages[_messages.length - 1]['botResponse'] = response;
       });
     } catch (e) {
-      debugPrint("Error getting Gemini response: $e"); // Debug log
+      debugPrint("Error getting Gemini response: $e");
       setState(() {
         isTyping = false;
         _messages[_messages.length - 1]['botResponse'] = 'Error: $e';
@@ -98,27 +136,85 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text("LearnCraft Chat", style: TextStyle(fontFamily: 'Poppins')),
         backgroundColor: Colors.blue[900],
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.person, color: Colors.white), // Profile icon as sidebar toggle
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue[900],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    _username ?? 'Loading...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              title: Text(
+                'View Profile',
+                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.pushNamed(context, '/profile'); // Navigate to ProfileScreen
+              },
+            ),
+            ListTile(
+              title: Text(
+                'Debug Menu',
+                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.pushNamed(context, '/debug'); // Navigate to DebugMenu
+              },
+            ),
+          ],
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          reverse: true, // Scroll to bottom for new messages
+          reverse: true,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min, // Prevent overflow in Column
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Display chat messages
                 ..._messages.map((message) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min, // Prevent overflow in Row
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: message['userMessage']!.isNotEmpty
                           ? MainAxisAlignment.end
                           : MainAxisAlignment.start,
@@ -161,14 +257,14 @@ class _ChatScreenState extends State<ChatScreen>
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min, // Prevent overflow
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        TypingIndicator(),
+                        _TypingIndicator(),
                       ],
                     ),
                   ),
-                SizedBox(height: 80), // Space for the text field
+                SizedBox(height: 80),
               ],
             ),
           ),
@@ -177,7 +273,7 @@ class _ChatScreenState extends State<ChatScreen>
       bottomSheet: Padding(
         padding: EdgeInsets.all(8.0),
         child: Row(
-          mainAxisSize: MainAxisSize.max, // Ensure Row fits within screen width
+          mainAxisSize: MainAxisSize.max,
           children: [
             Expanded(
               child: TextField(
@@ -211,15 +307,14 @@ class _ChatScreenState extends State<ChatScreen>
   }
 }
 
-// Typing indicator animation (updated to fix Tween assertion)
-class TypingIndicator extends StatefulWidget {
-  const TypingIndicator({super.key});
+class _TypingIndicator extends StatefulWidget {
+  const _TypingIndicator({super.key});
 
   @override
-  State<TypingIndicator> createState() => _TypingIndicatorState();
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
 }
 
-class _TypingIndicatorState extends State<TypingIndicator>
+class _TypingIndicatorState extends State<_TypingIndicator>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -247,7 +342,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min, // Prevent overflow
+      mainAxisSize: MainAxisSize.min,
       children: List.generate(3, (index) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 3),

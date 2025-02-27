@@ -1,10 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import 'chat_screen.dart';
+import '../../services/auth_service.dart';
+import 'user_details_screen.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-
   const RegisterScreen({super.key});
 
   @override
@@ -33,24 +34,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final user = await AuthService().registerUser(
         emailController.text,
         passwordController.text,
-        "User Name", // Placeholder for name
+        "User Name", // Placeholder for name (updated in UserDetailsScreen)
       );
 
       if (user != null) {
+        // Store minimal user data in Firestore immediately after registration
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'email': user.email,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)); // Merge if document exists
+
+        debugPrint("User registered: ${user.uid}, Email: ${user.email}");
+
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: Text("Verify Your Email"),
-            content: Text("A verification email has been sent to ${emailController.text}. Please verify your email before logging in."),
+            content: Text("A verification email has been sent to ${emailController.text}. Please verify your email before proceeding."),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
-                  );
+                  Navigator.pushReplacementNamed(context, '/user-details'); // Navigate to UserDetailsScreen
                 },
                 child: Text("OK"),
               ),
@@ -60,8 +66,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _checkEmailVerification();
       }
     } catch (e) {
+      debugPrint("Registration error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Registration failed. Please try again.")),
+        SnackBar(content: Text("Registration failed. Please try again: $e")),
       );
     } finally {
       setState(() {
@@ -78,14 +85,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         try {
           final user = await AuthService().loginUser(emailController.text, passwordController.text);
           if (user != null) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => ChatScreen()),
-            );
+            debugPrint("Email verified, navigating to UserDetailsScreen");
+            Navigator.pushReplacementNamed(context, '/user-details'); // Navigate to UserDetailsScreen
           }
         } catch (e) {
+          debugPrint("Login after verification error: $e");
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Login failed after verification. Please try again.")),
+            SnackBar(content: Text("Login failed after verification. Please try again: $e")),
           );
         }
         break;
@@ -188,14 +194,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  Text(
-                    "Already have an account",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: Colors.blue[900],
-                      decoration: TextDecoration.underline,
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/login');
+                    },
+                    child: Text(
+                      "Already have an account",
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        color: Colors.blue[900],
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 20),
                   Text(
