@@ -8,6 +8,7 @@ import 'screens/authentication_screens/user_details_screen.dart';
 import 'screens/chat_screens/chat_screen.dart';
 import 'screens/intro_screens/splash_screen.dart';
 import 'debug/debug_menu.dart';
+import 'screens/chat_screens/quiz_screen.dart';
 
 import 'firebase_options.dart';
 
@@ -57,7 +58,8 @@ class MyApp extends StatelessWidget {
         '/user-details': (context) => UserDetailsScreen(), // User details screen
         '/chat': (context) => ChatScreen(), // Chat screen
         '/debug': (context) => DebugMenu(), // Debug menu screen
-        '/profile': (context) => ProfileScreen(), // Profile screen
+        '/profile': (context) => ProfileScreen(),
+        '/quiz': (context) => QuizScreen(),// Profile screen
       },
       theme: ThemeData(
         primaryColor: Colors.white, // White background
