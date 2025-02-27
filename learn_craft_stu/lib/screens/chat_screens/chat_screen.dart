@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../services/gemini_service.dart';
+import 'quiz_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -35,29 +36,31 @@ class _ChatScreenState extends State<ChatScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text("Authentication Required"),
-        content: Text("Please log in to use the chat."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            child: Text("OK"),
+      builder:
+          (context) => AlertDialog(
+            title: Text("Authentication Required"),
+            content: Text("Please log in to use the chat."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/login');
+                },
+                child: Text("OK"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   void _loadUserDetails() async {
     if (_user == null) return;
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_user!.uid)
-          .get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(_user!.uid)
+              .get();
       if (doc.exists) {
         setState(() {
           _username = doc.data()?['username'] as String?;
@@ -65,9 +68,9 @@ class _ChatScreenState extends State<ChatScreen>
       }
     } catch (e) {
       debugPrint("Error loading user details: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error loading user details: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error loading user details: $e")));
     }
   }
 
@@ -77,17 +80,23 @@ class _ChatScreenState extends State<ChatScreen>
       _geminiService.getChatHistory().listen((snapshot) {
         setState(() {
           _messages.clear();
-          _messages.addAll(snapshot.docs.map((doc) => {
-            'userMessage': doc['userMessage'] as String? ?? '',
-            'botResponse': doc['botResponse'] as String? ?? '',
-          }).toList());
+          _messages.addAll(
+            snapshot.docs
+                .map(
+                  (doc) => {
+                    'userMessage': doc['userMessage'] as String? ?? '',
+                    'botResponse': doc['botResponse'] as String? ?? '',
+                  },
+                )
+                .toList(),
+          );
         });
       });
     } catch (e) {
       debugPrint("Error loading chat history: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error loading chat history: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error loading chat history: $e")));
     }
   }
 
@@ -107,7 +116,9 @@ class _ChatScreenState extends State<ChatScreen>
 
     try {
       debugPrint("Sending prompt to Gemini: ${textController.text}");
-      String response = await _geminiService.getGeminiResponse(textController.text);
+      String response = await _geminiService.getGeminiResponse(
+        textController.text,
+      );
       debugPrint("Gemini response received: $response");
       setState(() {
         isTyping = false;
@@ -139,10 +150,14 @@ class _ChatScreenState extends State<ChatScreen>
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: Icon(Icons.person, color: Colors.blue[900]), // Profile icon as sidebar toggle
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (context) => IconButton(
+                icon: Icon(
+                  Icons.person,
+                  color: Colors.blue[900],
+                ), // Profile icon as sidebar toggle
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
       ),
       drawer: Drawer(
@@ -150,9 +165,7 @@ class _ChatScreenState extends State<ChatScreen>
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue[900],
-              ),
+              decoration: BoxDecoration(color: Colors.blue[900]),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -179,27 +192,39 @@ class _ChatScreenState extends State<ChatScreen>
             ListTile(
               title: Text(
                 'View Profile',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.blue[900],
+                ),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
-                Navigator.pushNamed(context, '/profile'); // Navigate to ProfileScreen
+                Navigator.pushNamed(
+                  context,
+                  '/profile',
+                ); // Navigate to ProfileScreen
               },
             ),
             ListTile(
               title: Text(
                 'Quiz',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.blue[900],
+                ),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
-                Navigator.pushNamed(context, '/debug'); // Navigate to DebugMenu
+                Navigator.pushNamed(context, '/quiz'); // Navigate to DebugMenu
               },
             ),
             ListTile(
               title: Text(
                 'Debug Menu',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.blue[900],
+                ),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -224,9 +249,10 @@ class _ChatScreenState extends State<ChatScreen>
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: message['userMessage']!.isNotEmpty
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start,
+                      mainAxisAlignment:
+                          message['userMessage']!.isNotEmpty
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
                       children: [
                         if (message['userMessage']!.isNotEmpty)
                           Container(
@@ -268,9 +294,7 @@ class _ChatScreenState extends State<ChatScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        _TypingIndicator(),
-                      ],
+                      children: [_TypingIndicator()],
                     ),
                   ),
                 SizedBox(height: 80),
@@ -300,7 +324,10 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                   filled: true,
                   fillColor: Colors.blue[50],
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                 ),
                 onSubmitted: (value) => sendMessage(),
               ),
@@ -336,10 +363,10 @@ class _TypingIndicatorState extends State<_TypingIndicator>
       vsync: this,
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: 0.5, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    _animation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
