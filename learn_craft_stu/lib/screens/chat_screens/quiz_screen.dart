@@ -184,9 +184,6 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           end: Alignment.bottomRight,
           colors: [
             Colors.blue[100]!,
-            Colors.purple[100]!,
-            Colors.yellow[100]!,
-            Colors.pink[100]!,
           ],
           stops: const [0.0, 0.3, 0.6, 1.0],
         ),
