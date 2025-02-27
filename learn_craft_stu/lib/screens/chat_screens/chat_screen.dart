@@ -8,7 +8,6 @@ import '../../services/gemini_service.dart';
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
-  @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
@@ -21,11 +20,11 @@ class _ChatScreenState extends State<ChatScreen>
   final List<Map<String, String>> _messages = [];
   final User? _user = FirebaseAuth.instance.currentUser;
   String? _username;
-  StreamSubscription<QuerySnapshot>? _chatHistorySubscription; // Store the subscription
+  StreamSubscription<QuerySnapshot>?
+  _chatHistorySubscription; // Store the subscription
   bool _isSelecting = false; // Track selection mode
   Set<int> _selectedMessages = {}; // Track selected message indices
 
-  @override
   void initState() {
     super.initState();
     if (_user == null) {
@@ -40,29 +39,31 @@ class _ChatScreenState extends State<ChatScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text("Authentication Required"),
-        content: Text("Please log in to use the chat."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            child: Text("OK"),
+      builder:
+          (context) => AlertDialog(
+            title: Text("Authentication Required"),
+            content: Text("Please log in to use the chat."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/login');
+                },
+                child: Text("OK"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   void _loadUserDetails() async {
     if (_user == null) return;
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_user!.uid)
-          .get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(_user!.uid)
+              .get();
       if (doc.exists) {
         if (mounted) {
           setState(() {
@@ -85,36 +86,48 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       debugPrint("Loading chat history for userId: ${_user!.uid}");
       _chatHistorySubscription?.cancel(); // Cancel any existing subscription
-      _chatHistorySubscription = _geminiService.getChatHistory().listen((snapshot) {
-        if (!mounted) return; // Check if the widget is still mounted
-        debugPrint("Chat history snapshot received with ${snapshot.docs.length} documents");
-        if (mounted) {
-          setState(() {
-            _messages.clear();
-            _messages.addAll(snapshot.docs.reversed.map((doc) { // Reversed for oldest at top, newest at bottom
-              final data = doc.data() as Map<String, dynamic>;
-              debugPrint("Processing Firestore document: userMessage=${data['userMessage']}, botResponse=${data['botResponse']}");
-              return {
-                'userMessage': data['userMessage'] as String? ?? '',
-                'botResponse': data['botResponse'] as String? ?? '',
-              };
-            }).toList());
-            debugPrint("Updated _messages list with ${_messages.length} messages: ${_messages.map((m) => 'userMessage=${m['userMessage']}, botResponse=${m['botResponse']}').join(', ')}");
-          });
-        }
-      }, onError: (e) {
-        if (!mounted) return;
-        debugPrint("Error in chat history stream: $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading chat history: $e")),
-        );
-      });
+      _chatHistorySubscription = _geminiService.getChatHistory().listen(
+        (snapshot) {
+          if (!mounted) return; // Check if the widget is still mounted
+          debugPrint(
+            "Chat history snapshot received with ${snapshot.docs.length} documents",
+          );
+          if (mounted) {
+            setState(() {
+              _messages.clear();
+              _messages.addAll(
+                snapshot.docs.reversed.map((doc) {
+                  // Reversed for oldest at top, newest at bottom
+                  final data = doc.data() as Map<String, dynamic>;
+                  debugPrint(
+                    "Processing Firestore document: userMessage=${data['userMessage']}, botResponse=${data['botResponse']}",
+                  );
+                  return {
+                    'userMessage': data['userMessage'] as String? ?? '',
+                    'botResponse': data['botResponse'] as String? ?? '',
+                  };
+                }).toList(),
+              );
+              debugPrint(
+                "Updated _messages list with ${_messages.length} messages: ${_messages.map((m) => 'userMessage=${m['userMessage']}, botResponse=${m['botResponse']}').join(', ')}",
+              );
+            });
+          }
+        },
+        onError: (e) {
+          if (!mounted) return;
+          debugPrint("Error in chat history stream: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error loading chat history: $e")),
+          );
+        },
+      );
     } catch (e) {
       if (!mounted) return;
       debugPrint("Error loading chat history: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error loading chat history: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error loading chat history: $e")));
     }
   }
 
@@ -130,19 +143,27 @@ class _ChatScreenState extends State<ChatScreen>
       setState(() {
         isExpanded = false;
         isTyping = true;
-        _messages.insert(0, {'userMessage': textController.text, 'botResponse': ''}); // Add new messages at the top (bottom in UI due to reverse)
+        _messages.insert(0, {
+          'userMessage': textController.text,
+          'botResponse': '',
+        }); // Add new messages at the top (bottom in UI due to reverse)
       });
     }
 
     try {
       debugPrint("Sending prompt to Gemini: ${textController.text}");
-      String response = await _geminiService.getGeminiResponse(textController.text);
+      String response = await _geminiService.getGeminiResponse(
+        textController.text,
+      );
       debugPrint("Gemini response received: $response");
       if (mounted) {
         setState(() {
           isTyping = false;
-          _messages[0]['botResponse'] = response; // Update the newest message with the bot response
-          debugPrint("Updated last message: userMessage=${_messages[0]['userMessage']}, botResponse=${_messages[0]['botResponse']}");
+          _messages[0]['botResponse'] =
+              response; // Update the newest message with the bot response
+          debugPrint(
+            "Updated last message: userMessage=${_messages[0]['userMessage']}, botResponse=${_messages[0]['botResponse']}",
+          );
         });
       }
     } catch (e) {
@@ -197,18 +218,20 @@ class _ChatScreenState extends State<ChatScreen>
       if (mounted) {
         setState(() async {
           // Sort selected indices in descending order to avoid index shifting during deletion
-          final selectedIndices = _selectedMessages.toList()..sort((a, b) => b.compareTo(a));
+          final selectedIndices =
+              _selectedMessages.toList()..sort((a, b) => b.compareTo(a));
           for (var index in selectedIndices) {
             if (index >= 0 && index < _messages.length) {
               final message = _messages[index];
               // Delete from Firestore if the message exists
-              final querySnapshot = await FirebaseFirestore.instance
-                  .collection('chats')
-                  .doc(_user!.uid)
-                  .collection('messages')
-                  .where('userMessage', isEqualTo: message['userMessage'])
-                  .where('botResponse', isEqualTo: message['botResponse'])
-                  .get();
+              final querySnapshot =
+                  await FirebaseFirestore.instance
+                      .collection('chats')
+                      .doc(_user!.uid)
+                      .collection('messages')
+                      .where('userMessage', isEqualTo: message['userMessage'])
+                      .where('botResponse', isEqualTo: message['botResponse'])
+                      .get();
               for (var doc in querySnapshot.docs) {
                 await doc.reference.delete();
               }
@@ -233,30 +256,33 @@ class _ChatScreenState extends State<ChatScreen>
   void _showDeleteOptions() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete Messages'),
-        content: Text('Would you like to delete selected messages or clear all?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              deleteSelectedMessages();
-            },
-            child: Text('Delete Selected'),
+      builder:
+          (context) => AlertDialog(
+            title: Text('Delete Messages'),
+            content: Text(
+              'Would you like to delete selected messages or clear all?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  deleteSelectedMessages();
+                },
+                child: Text('Delete Selected'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  clearChatHistory();
+                },
+                child: Text('Clear All'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              clearChatHistory();
-            },
-            child: Text('Clear All'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -273,7 +299,8 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   void dispose() {
-    _chatHistorySubscription?.cancel(); // Cancel the Firestore stream subscription
+    _chatHistorySubscription
+        ?.cancel(); // Cancel the Firestore stream subscription
     textController.dispose();
     super.dispose();
   }
@@ -284,31 +311,54 @@ class _ChatScreenState extends State<ChatScreen>
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: Icon(Icons.person, color: Colors.blue[900]), // Profile icon as sidebar toggle
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (context) => IconButton(
+                icon: Icon(
+                  Icons.person,
+                  color: Colors.blue[900],
+                ), // Profile icon as sidebar toggle
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
         actions: [
           if (!_isSelecting)
             IconButton(
-              icon: Icon(Icons.select_all, size: 20, color: Colors.blue[900]), // Select button
+              icon: Icon(
+                Icons.select_all,
+                size: 20,
+                color: Colors.blue[900],
+              ), // Select button
               onPressed: _toggleSelectMode, // Toggle selection mode
               tooltip: 'Select Messages', // Tooltip for accessibility
             ),
           if (_isSelecting)
             IconButton(
-              icon: Icon(Icons.cancel, size: 20, color: Colors.blue[900]), // Cancel selection mode
+              icon: Icon(
+                Icons.cancel,
+                size: 20,
+                color: Colors.blue[900],
+              ), // Cancel selection mode
               onPressed: _toggleSelectMode, // Exit selection mode
               tooltip: 'Cancel Selection', // Tooltip for accessibility
             ),
           IconButton(
-            icon: Icon(Icons.delete, size: 20, color: Colors.blue[900]), // Delete button for options
-            onPressed: _isSelecting ? _showDeleteOptions : null, // Show delete options only in select mode
+            icon: Icon(
+              Icons.delete,
+              size: 20,
+              color: Colors.blue[900],
+            ), // Delete button for options
+            onPressed:
+                _isSelecting
+                    ? _showDeleteOptions
+                    : null, // Show delete options only in select mode
             tooltip: 'Delete Messages', // Tooltip for accessibility
           ),
           IconButton(
-            icon: Icon(Icons.clear, size: 20, color: Colors.blue[900]), // Small clear button
+            icon: Icon(
+              Icons.clear,
+              size: 20,
+              color: Colors.blue[900],
+            ), // Small clear button
             onPressed: clearChatHistory, // Clear chat history
             tooltip: 'Clear Chat', // Tooltip for accessibility
           ),
@@ -319,9 +369,7 @@ class _ChatScreenState extends State<ChatScreen>
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue[900],
-              ),
+              decoration: BoxDecoration(color: Colors.blue[900]),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -348,17 +396,26 @@ class _ChatScreenState extends State<ChatScreen>
             ListTile(
               title: Text(
                 'View Profile',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.blue[900],
+                ),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
-                Navigator.pushNamed(context, '/profile'); // Navigate to ProfileScreen
+                Navigator.pushNamed(
+                  context,
+                  '/profile',
+                ); // Navigate to ProfileScreen
               },
             ),
             ListTile(
               title: Text(
                 'Quiz',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.blue[900],
+                ),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -368,7 +425,10 @@ class _ChatScreenState extends State<ChatScreen>
             ListTile(
               title: Text(
                 'Debug Menu',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.blue[900],
+                ),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -384,57 +444,72 @@ class _ChatScreenState extends State<ChatScreen>
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start, // Start messages from the top
+              mainAxisAlignment:
+                  MainAxisAlignment.start, // Start messages from the top
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                ..._messages.reversed.map((message) { // Reverse the order of messages in the UI (oldest at top, newest at bottom)
-                  debugPrint("Rendering message: userMessage=${message['userMessage']}, botResponse=${message['botResponse']}");
+                ..._messages.reversed.map((message) {
+                  // Reverse the order of messages in the UI (oldest at top, newest at bottom)
+                  debugPrint(
+                    "Rendering message: userMessage=${message['userMessage']}, botResponse=${message['botResponse']}",
+                  );
                   final index = _messages.indexOf(message);
                   return GestureDetector(
-                    onTap: _isSelecting
-                        ? () {
-                      if (mounted) {
-                        setState(() {
-                          if (_selectedMessages.contains(index)) {
-                            _selectedMessages.remove(index);
-                          } else {
-                            _selectedMessages.add(index);
-                          }
-                        });
-                      }
-                    }
-                        : null, // Disable tap when not in select mode
+                    onTap:
+                        _isSelecting
+                            ? () {
+                              if (mounted) {
+                                setState(() {
+                                  if (_selectedMessages.contains(index)) {
+                                    _selectedMessages.remove(index);
+                                  } else {
+                                    _selectedMessages.add(index);
+                                  }
+                                });
+                              }
+                            }
+                            : null, // Disable tap when not in select mode
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: message['userMessage']!.isNotEmpty && message['botResponse']!.isEmpty
-                            ? MainAxisAlignment.end
-                            : MainAxisAlignment.start,
+                        mainAxisAlignment:
+                            message['userMessage']!.isNotEmpty &&
+                                    message['botResponse']!.isEmpty
+                                ? MainAxisAlignment.end
+                                : MainAxisAlignment.start,
                         children: [
                           Flexible(
                             child: Container(
                               padding: EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: _isSelecting && _selectedMessages.contains(index)
-                                    ? Colors.orange.withOpacity(0.3) // Highlight selected messages
-                                    : (message['userMessage']!.isNotEmpty && message['botResponse']!.isEmpty
-                                    ? Colors.blue
-                                    : Colors.grey[300]),
+                                color:
+                                    _isSelecting &&
+                                            _selectedMessages.contains(index)
+                                        ? Colors.orange.withOpacity(
+                                          0.3,
+                                        ) // Highlight selected messages
+                                        : (message['userMessage']!.isNotEmpty &&
+                                                message['botResponse']!.isEmpty
+                                            ? Colors.blue
+                                            : Colors.grey[300]),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                message['userMessage']!.isNotEmpty && message['botResponse']!.isEmpty
+                                message['userMessage']!.isNotEmpty &&
+                                        message['botResponse']!.isEmpty
                                     ? message['userMessage']!
                                     : (message['botResponse']!.isNotEmpty
-                                    ? message['botResponse']!
-                                    : ''),
+                                        ? message['botResponse']!
+                                        : ''),
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
-                                  color: message['userMessage']!.isNotEmpty && message['botResponse']!.isEmpty
-                                      ? Colors.white
-                                      : Colors.black,
+                                  color:
+                                      message['userMessage']!.isNotEmpty &&
+                                              message['botResponse']!.isEmpty
+                                          ? Colors.white
+                                          : Colors.black,
                                 ),
                                 softWrap: true, // Allow text to wrap
                                 maxLines: null, // Allow unlimited lines
@@ -452,9 +527,7 @@ class _ChatScreenState extends State<ChatScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        _TypingIndicator(),
-                      ],
+                      children: [_TypingIndicator()],
                     ),
                   ),
               ],
@@ -485,7 +558,10 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                   filled: true,
                   fillColor: Colors.blue[50],
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                 ),
                 onSubmitted: (value) => sendMessage(),
               ),
@@ -521,10 +597,10 @@ class _TypingIndicatorState extends State<_TypingIndicator>
       vsync: this,
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: 0.5, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    _animation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

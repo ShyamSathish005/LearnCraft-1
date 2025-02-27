@@ -1,20 +1,14 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:flutter/material.dart';
 
-class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key});
+class TeachScreen extends StatefulWidget {
+  const TeachScreen({super.key});
 
   @override
-  _QuizScreenState createState() => _QuizScreenState();
+  State<TeachScreen> createState() => _TeachScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
-  final List<Color> _initialButtonColors = [
-    Colors.lightBlue[200]!,
-    Colors.purple[200]!,
-    Colors.yellow[200]!,
-  ];
-
+class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin {
   List<Color> _buttonColors = [];
   List<Offset> _buttonPositions = [];
   List<String> _buttonLabels = [];
@@ -28,14 +22,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _buttonColors = List.from(_initialButtonColors);
-    _buttonPositions = List.generate(_initialButtonColors.length, (index) {
-      return Offset(
-        (index % 2) * 150 + 50,
-        (index ~/ 2) * 100 + 100,
-      );
-    });
-    _buttonLabels = ["Chat", "Talk", "Speak"];
+    _initializeButtons();
 
     _scaleController = AnimationController(
       vsync: this,
@@ -72,29 +59,36 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     _glowController.forward();
   }
 
-  @override
-  void dispose() {
-    _scaleController.dispose();
-    _pulseController.dispose();
-    _glowController.dispose();
-    super.dispose();
-  }
-
-  void _addNewButton(String label) {
+  void _initializeButtons() {
+    // Predefined Linear Regression keywords
+    const initialLabels = [
+      "Slope",
+      "Intercept",
+      "Error",
+      "Prediction",
+      "Data",
+      "Fit",
+    ];
     setState(() {
-      _buttonColors.add(Colors.primaries[Random().nextInt(Colors.primaries.length)][200]!);
-      _buttonPositions.add(Offset(
-        Random().nextDouble() * (MediaQuery.of(context).size.width - 80),
-        Random().nextDouble() * (MediaQuery.of(context).size.height - 40),
-      ));
-      _buttonLabels.add(label);
+      _buttonColors = List.generate(
+        initialLabels.length,
+            (index) => Colors.primaries[index % Colors.primaries.length][200]!,
+      );
+      _buttonPositions = List.generate(
+        initialLabels.length,
+            (index) => Offset(
+          (index % 3) * 100 + 40, // Adjusted for visibility
+          (index ~/ 3) * 60 + 80, // Adjusted for visibility
+        ),
+      );
+      _buttonLabels = List.from(initialLabels);
     });
   }
 
   void _onDragUpdate(int index, Offset newPosition) {
     setState(() {
       double newDx = newPosition.dx.clamp(0, MediaQuery.of(context).size.width - 80);
-      double newDy = newPosition.dy.clamp(0, MediaQuery.of(context).size.height - 40);
+      double newDy = newPosition.dy.clamp(0, MediaQuery.of(context).size.height - 80);
       _buttonPositions[index] = Offset(newDx, newDy);
       _checkForCombination(index);
     });
@@ -122,7 +116,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     _scaleController.forward().then((_) => _scaleController.reverse());
     _pulseController.reset();
     _pulseController.forward();
-    _glowController.reset(); // Fixed the typo here
+    _glowController.reset();
     _glowController.forward();
 
     setState(() {
@@ -132,19 +126,16 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       double newY = (_buttonPositions[index1].dy + _buttonPositions[index2].dy) / 2;
       Offset newPosition = Offset(
         newX.clamp(0, MediaQuery.of(context).size.width - 80),
-        newY.clamp(0, MediaQuery.of(context).size.height - 40),
+        newY.clamp(0, MediaQuery.of(context).size.height - 80),
       );
 
-      // Merge colors
       int r = (currentColor.red + otherColor.red) ~/ 2;
       int g = (currentColor.green + otherColor.green) ~/ 2;
       int b = (currentColor.blue + otherColor.blue) ~/ 2;
       Color newColor = Color.fromRGBO(r, g, b, 1.0);
 
-      // Merge labels into a single word
-      String newLabel = currentLabel + otherLabel;
+      String newLabel = _generateMeaningfulMerge(currentLabel, otherLabel);
 
-      // Remove old buttons (in descending order to avoid index issues)
       List<int> buttonsToRemove = [index1, index2]..sort((a, b) => b.compareTo(a));
       for (int i in buttonsToRemove) {
         _buttonColors.removeAt(i);
@@ -152,19 +143,31 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         _buttonLabels.removeAt(i);
       }
 
-      // Add merged button
       _buttonColors.add(newColor);
       _buttonPositions.add(newPosition);
       _buttonLabels.add(newLabel);
 
-      // Notify user of the merge
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Merged into: $newLabel")),
       );
-
-      // Add a new button to continue the chat
-      _addNewButton("Next${_buttonLabels.length + 1}");
     });
+  }
+
+  String _generateMeaningfulMerge(String label1, String label2) {
+    // Meaningful merges for Linear Regression
+    if ((label1 == "Slope" && label2 == "Intercept") || (label1 == "Intercept" && label2 == "Slope")) {
+      return "LineEquation";
+    } else if ((label1 == "Error" && label2 == "Prediction") || (label1 == "Prediction" && label2 == "Error")) {
+      return "Residual";
+    } else if ((label1 == "Data" && label2 == "Fit") || (label1 == "Fit" && label2 == "Data")) {
+      return "Model";
+    } else if ((label1 == "Slope" && label2 == "Error") || (label1 == "Error" && label2 == "Slope")) {
+      return "SlopeError";
+    } else if ((label1 == "Intercept" && label2 == "Error") || (label1 == "Error" && label2 == "Intercept")) {
+      return "InterceptError";
+    } else {
+      return "$label1$label2"; // Default concatenation
+    }
   }
 
   bool _isOverlapping(Offset pos1, Offset pos2) {
@@ -174,29 +177,69 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         (pos1.dy - pos2.dy).abs() < buttonSize - overlapThreshold;
   }
 
-  Widget _buildInfiniteScrollBackground() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 5000),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.blue[100]!, Colors.purple[100]!],
-        ),
-      ),
-      child: CustomPaint(
-        painter: _InfiniteScrollPainter(),
-        child: Container(),
-      ),
+  void _explainButton(int index) {
+    String label = _buttonLabels[index];
+    String explanation;
+    switch (label) {
+      case "Slope":
+        explanation = "Slope is the steepness of the line in linear regression.";
+        break;
+      case "Intercept":
+        explanation = "Intercept is where the line crosses the y-axis.";
+        break;
+      case "Error":
+        explanation = "Error is the difference between actual and predicted values.";
+        break;
+      case "Prediction":
+        explanation = "Prediction is the value estimated by the regression model.";
+        break;
+      case "Data":
+        explanation = "Data is the set of points used to build the model.";
+        break;
+      case "Fit":
+        explanation = "Fit is how well the line matches the data.";
+        break;
+      case "LineEquation":
+        explanation = "LineEquation is the formula y = mx + b.";
+        break;
+      case "Residual":
+        explanation = "Residual is the error between predicted and actual values.";
+        break;
+      case "Model":
+        explanation = "Model is the fitted line representing the data.";
+        break;
+      case "SlopeError":
+        explanation = "SlopeError is the uncertainty in the slope estimate.";
+        break;
+      case "InterceptError":
+        explanation = "InterceptError is the uncertainty in the intercept estimate.";
+        break;
+      default:
+        explanation = "$label is a combined concept in linear regression.";
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(explanation)),
     );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    _pulseController.dispose();
+    _glowController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Linear Regression Teach'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.blue[900],
+      ),
       body: Stack(
         children: [
-          _buildInfiniteScrollBackground(),
           ...List.generate(_buttonColors.length, (index) {
             return Positioned(
               left: _buttonPositions[index].dx,
@@ -204,14 +247,8 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               child: _buildDraggableButton(index),
             );
           }),
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton(
-              onPressed: () => _addNewButton("Chat${_buttonLabels.length + 1}"),
-              child: const Icon(Icons.add),
-            ),
-          ),
+          if (_buttonLabels.isEmpty)
+            const Center(child: Text("No buttons available")),
         ],
       ),
     );
@@ -219,6 +256,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
   Widget _buildDraggableButton(int index) {
     return GestureDetector(
+      onTap: () => _explainButton(index),
       onPanUpdate: (details) {
         _onDragUpdate(index, _buttonPositions[index] + details.delta);
       },
@@ -250,28 +288,4 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       ),
     );
   }
-}
-
-class _InfiniteScrollPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.1)
-      ..strokeWidth = 2;
-    double offsetY = DateTime.now().millisecondsSinceEpoch % size.height;
-    for (int i = -1; i <= 1; i++) {
-      canvas.drawLine(
-        Offset(0, offsetY + i * size.height),
-        Offset(size.width, offsetY + i * size.height),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-void main() {
-  runApp(const MaterialApp(home: QuizScreen()));
 }

@@ -5,10 +5,10 @@ import 'package:learn_craft_stu/screens/profile/ProfileScreen.dart';
 import 'screens/authentication_screens/login_screen.dart';
 import 'screens/authentication_screens/register_screen.dart';
 import 'screens/authentication_screens/user_details_screen.dart';
-import 'screens/chat_screens/chat_screen.dart';
+import 'screens/chat_screens/chat_screen.dart'; // Original ChatScreen with messages
 import 'screens/intro_screens/splash_screen.dart';
 import 'debug/debug_menu.dart';
-import 'screens/chat_screens/quiz_screen.dart';
+import 'screens/chat_screens/quiz_screen.dart'; // Contains TeachScreen
 
 import 'firebase_options.dart';
 
@@ -39,7 +39,7 @@ void main() async {
         : DefaultFirebaseOptions.currentPlatform, // Use generated options for mobile (Android/iOS)
   );
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -52,15 +52,15 @@ class MyApp extends StatelessWidget {
       title: 'LearnCraft',
       initialRoute: '/', // Start with SplashScreen
       routes: {
-        '/': (context) => SplashScreen(), // Splash screen as the initial route
+        '/': (context) => const SplashScreen(), // Splash screen as the initial route
         '/login': (context) => const LoginScreen(), // Login screen
-        '/register': (context) => RegisterScreen(), // Register screen
-        '/user-details': (context) => UserDetailsScreen(), // User details screen
-        '/chat': (context) => ChatScreen(), // Chat screen
-        '/debug': (context) => DebugMenu(), // Debug menu screen
-        '/profile': (context) => ProfileScreen(),
-        '/quiz': (context) => QuizScreen(),// Profile screen
-      },
+        '/register': (context) => const RegisterScreen(), // Register screen
+        '/user-details': (context) => const UserDetailsScreen(), // User details screen
+        '/chat': (context) => const ChatScreen(), // Chat screen with messages
+        '/debug': (context) => const DebugMenu(), // Debug menu screen
+        '/profile': (context) => const ProfileScreen(), // Profile screen
+        '/quiz': (context) => const TeachScreen(),
+              },
       theme: ThemeData(
         primaryColor: Colors.white, // White background
         colorScheme: ColorScheme.fromSwatch().copyWith(
