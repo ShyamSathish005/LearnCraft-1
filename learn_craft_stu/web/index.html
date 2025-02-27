@@ -29,10 +29,38 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>learn_craft_stu</title>
+  <title>LearnCraft</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js"></script>
+
+  <!-- Firebase Configuration -->
+  <script>
+    // Replace with your actual Firebase configuration from the Firebase Console
+    const firebaseConfig = {
+      apiKey: "your-api-key",
+      authDomain: "your-project-id.firebaseapp.com",
+      projectId: "your-project-id",
+      storageBucket: "your-project-id.appspot.com",
+      messagingSenderId: "your-messaging-sender-id",
+      appId: "your-app-id"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Optional: Initialize Firebase App Check with reCAPTCHA v3 (replace with your reCAPTCHA site key)
+    firebase.appCheck().activate(
+      'your-recaptcha-site-key', // Replace with your reCAPTCHA v3 site key from Firebase Console > App Check
+      true // Enable debug mode for development (set to false for production)
+    );
+  </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+<script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

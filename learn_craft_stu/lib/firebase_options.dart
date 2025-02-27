@@ -78,4 +78,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'learncraft-5145.firebasestorage.app',
     iosBundleId: 'com.example.learnCraftStu',
   );
+
 }

@@ -19,7 +19,7 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               // Brain icon and related elements (you can use an image asset or SVG)
               Image.asset(
-                'assets/brain_icon.png', // Add this to pubspec.yaml under assets
+                'assets/images/welcome/brain_icon.png', // Add this to pubspec.yaml under assets
                 height: 200,
                 width: 200,
               ),

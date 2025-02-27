@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:learn_craft_stu/screens/profile/ProfileScreen.dart';
 import 'screens/authentication_screens/login_screen.dart';
@@ -10,43 +9,36 @@ import 'screens/chat_screens/chat_screen.dart';
 import 'screens/intro_screens/splash_screen.dart';
 import 'debug/debug_menu.dart';
 
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    // Initialize Firebase with web-specific configuration if on web
-    if (kIsWeb) {
-      await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: "your-api-key",
-          authDomain: "your-project-id.firebaseapp.com",
-          projectId: "your-project-id",
-          storageBucket: "your-project-id.appspot.com",
-          messagingSenderId: "your-messaging-sender-id",
-          appId: "your-app-id",
-        ),
-      );
-    } else {
-      await Firebase.initializeApp();
+  // Filter debugPrint to show only Gemini-specific messages
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null) {
+      if (message.contains('Gemini:') || message.contains('Gemini Error:')) {
+        print(message); // Output only Gemini-related messages
+      }
     }
+  };
 
-    // Optional: Activate App Check for web and mobile
-    await FirebaseAppCheck.instance.activate(
-      // For web, you might need to configure App Check separately
-      webProvider: ReCaptchaV3Provider('your-recaptcha-site-key'), // Replace with your reCAPTCHA v3 site key
-    );
+  // Initialize Firebase for web and mobile
+  await Firebase.initializeApp(
+    options: kIsWeb
+        ? const FirebaseOptions(
+      apiKey: 'AIzaSyBP9rGTu7EaiNuzyvuC7FFzA0hHte4Wpzk',
+      appId: '1:346433396765:web:284a9ef71156c50013a6f4',
+      messagingSenderId: '346433396765',
+      projectId: 'learncraft-5145',
+      authDomain: 'learncraft-5145.firebaseapp.com',
+      storageBucket: 'learncraft-5145.firebasestorage.app',
+      measurementId: 'G-J2LMDXMYJX',
+    )
+        : DefaultFirebaseOptions.currentPlatform, // Use generated options for mobile (Android/iOS)
+  );
 
-    // Optional: Use Firestore Emulator for local testing (comment out or remove for production)
-    // if (!kIsWeb) {
-    //   await FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
-    // }
-
-    runApp(MyApp());
-  } catch (e) {
-    debugPrint("Firebase initialization error: $e");
-    // Handle initialization failure (e.g., show an error screen or exit)
-    runApp(ErrorApp(errorMessage: "Failed to initialize Firebase: $e"));
-  }
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -74,28 +66,6 @@ class MyApp extends StatelessWidget {
         ),
         fontFamily: 'Poppins', // Default to Poppins
         scaffoldBackgroundColor: Colors.white,
-
-      ),
-    );
-  }
-}
-
-// Error screen as a fallback if Firebase initialization fails
-class ErrorApp extends StatelessWidget {
-  final String errorMessage;
-
-  const ErrorApp({required this.errorMessage, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text(
-            errorMessage,
-            style: TextStyle(fontFamily: 'Poppins', color: Colors.red),
-          ),
-        ),
       ),
     );
   }

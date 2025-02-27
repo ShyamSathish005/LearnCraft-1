@@ -137,11 +137,10 @@ class _ChatScreenState extends State<ChatScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("LearnCraft Chat", style: TextStyle(fontFamily: 'Poppins')),
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.white,
         leading: Builder(
           builder: (context) => IconButton(
-            icon: Icon(Icons.person, color: Colors.white), // Profile icon as sidebar toggle
+            icon: Icon(Icons.person, color: Colors.blue[900]), // Profile icon as sidebar toggle
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
@@ -185,6 +184,16 @@ class _ChatScreenState extends State<ChatScreen>
               onTap: () {
                 Navigator.pop(context); // Close the drawer
                 Navigator.pushNamed(context, '/profile'); // Navigate to ProfileScreen
+              },
+            ),
+            ListTile(
+              title: Text(
+                'Quiz',
+                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.pushNamed(context, '/debug'); // Navigate to DebugMenu
               },
             ),
             ListTile(

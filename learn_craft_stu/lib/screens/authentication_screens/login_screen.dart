@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../../services/auth_service.dart';
 import '../chat_screens/chat_screen.dart';
 
@@ -32,46 +33,53 @@ class _LoginScreenState extends State<LoginScreen> {
       final String identifier = identifierController.text.trim();
       String? email;
 
-      // Query Firestore to find the user by email or username
-      final QuerySnapshot userQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: identifier)
-          .limit(1)
-          .get();
+      debugPrint("Querying Firestore for identifier: $identifier");
 
-      if (userQuery.docs.isEmpty) {
-        // If no email match, try username
-        final QuerySnapshot usernameQuery = await FirebaseFirestore.instance
-            .collection('users')
-            .where('username', isEqualTo: identifier)
-            .limit(1)
-            .get();
-
-        if (usernameQuery.docs.isEmpty) {
-          throw FirebaseAuthException(code: 'user-not-found', message: 'No user found with that email or username');
+      // First, try to log in with the identifier as an email
+      try {
+        final user = await AuthService().loginUser(identifier, passwordController.text);
+        if (user != null) {
+          debugPrint("User logged in with email: $identifier");
+          if (user.emailVerified) {
+            Navigator.pushReplacementNamed(context, '/chat'); // Navigate to ChatScreen if verified
+          } else {
+            _showVerificationDialog();
+          }
+          return;
         }
-        email = usernameQuery.docs.first['email'] as String?;
-      } else {
-        email = userQuery.docs.first['email'] as String?;
+      } catch (e) {
+        // If login fails, proceed to find by username
       }
 
-      if (email == null) {
-        throw FirebaseAuthException(code: 'user-not-found', message: 'User not found');
+      // If login with email fails, query Firestore to find by username, retrieving only email and username
+      final QuerySnapshot usernameQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: identifier)
+          .limit(1)
+          .get({ 'email', 'username' } as GetOptions?); // Retrieve only email and username fields
+
+      if (usernameQuery.docs.isEmpty) {
+        throw FirebaseAuthException(code: 'user-not-found', message: 'No user found with that email or username');
       }
 
-      debugPrint("Attempting login with email: $email");
+      email = usernameQuery.docs.first['email'] as String?;
+      if (email == null || email.isEmpty) {
+        throw Exception("Email not found for user");
+      }
 
-      // Use the email to log in via Firebase Authentication
+      debugPrint("Found user by username, email: $email");
+
+      // Now, try to log in with the retrieved email
       final user = await AuthService().loginUser(email, passwordController.text);
       if (user != null) {
-        debugPrint("User logged in: ${user.uid}, Email verified: ${user.emailVerified}");
-
-        // Optionally skip email verification for testing or if not enforced
+        debugPrint("User logged in with username: $identifier, email: $email");
         if (user.emailVerified) {
           Navigator.pushReplacementNamed(context, '/chat'); // Navigate to ChatScreen if verified
         } else {
           _showVerificationDialog();
         }
+      } else {
+        throw Exception("Login failed with retrieved email");
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = "Invalid email/username or password";
@@ -80,12 +88,12 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (e.code == 'wrong-password') {
         errorMessage = "Incorrect password";
       }
-      debugPrint("Login error: $e");
+      debugPrint("Login error (FirebaseAuth): $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
     } on FirebaseException catch (e) {
-      debugPrint("Firestore or Firebase error: $e");
+      debugPrint("Login error (Firebase/Firestore): $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("An error occurred. Please try again: $e")),
       );

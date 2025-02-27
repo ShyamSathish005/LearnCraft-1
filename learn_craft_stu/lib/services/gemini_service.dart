@@ -7,9 +7,8 @@ class GeminiService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GenerativeModel _model = GenerativeModel(
-    model: 'gemini-pro',
-    // Replace with your actual Google Generative AI API key
-    apiKey: 'AIzaSyBXahsxAbvGYL83KnTorVCQfQAxHEFejU0', // Replace with your actual key
+    model: 'gemini-2.0-flash', // Use a supported model (confirmed from Quick Start guide)
+    apiKey: 'YOUR_VALID_GEMINI_API_KEY_HERE', // Replace with your actual API key
   );
 
   Future<String> getGeminiResponse(String prompt) async {
@@ -19,27 +18,30 @@ class GeminiService {
         throw Exception("User not logged in");
       }
 
-      debugPrint("Sending prompt to Gemini: $prompt"); // Debug log
+      // Gemini-specific debug message for sending prompt
+      debugPrint("Gemini: Sending prompt - '$prompt'");
       final content = [Content.text(prompt)];
       final response = await _model.generateContent(content);
 
       if (response.text != null) {
         String generatedText = response.text!;
-        debugPrint("Gemini response received: $generatedText"); // Debug log
+        // Gemini-specific debug message for receiving response
+        debugPrint("Gemini: Received response - '$generatedText'");
         await saveChatHistory(prompt, generatedText, user.uid);
         return generatedText;
       } else {
         throw Exception("No response received from Gemini");
       }
     } catch (e) {
-      debugPrint("Gemini Service Error: $e"); // Debug log
+      // Gemini-specific debug message for errors
+      debugPrint("Gemini Error: $e");
       return "Error: $e";
     }
   }
 
   Future<void> saveChatHistory(String userMessage, String botResponse, String userId) async {
     try {
-      debugPrint("Saving to Firestore for user: $userId"); // Debug log
+      // No Gemini-specific debug here, as this is Firestore-related
       await _firestore.collection('chats').doc(userId).collection('messages').add({
         'userMessage': userMessage,
         'botResponse': botResponse,
@@ -47,7 +49,7 @@ class GeminiService {
         'userId': userId,
       });
     } catch (e) {
-      debugPrint("Firestore Error: $e"); // Debug log
+      debugPrint("Firestore Error (not Gemini-related): $e"); // Optional, for context
       throw Exception("Failed to save chat history: $e");
     }
   }
