@@ -362,7 +362,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
-                Navigator.pushNamed(context, '/debug'); // Navigate to DebugMenu
+                Navigator.pushNamed(context, '/quiz'); // Navigate to DebugMenu
               },
             ),
             ListTile(
