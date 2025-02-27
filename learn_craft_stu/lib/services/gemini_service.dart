@@ -9,7 +9,7 @@ class GeminiService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GenerativeModel _model = GenerativeModel(
     model: 'gemini-2.0-flash',
-    apiKey: 'AIzaSyCDGana6U0f7kre53WTFFYxayPlYAcVAJA',
+    apiKey: 'AIzaSyB4dEgeXZuk9MDQUqNLMXCbpSqW9WWpBB8',
   );
 
 
