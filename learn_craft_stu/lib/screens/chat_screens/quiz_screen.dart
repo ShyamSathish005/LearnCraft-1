@@ -11,7 +11,8 @@ class TeachScreen extends StatefulWidget {
   State<TeachScreen> createState() => _TeachScreenState();
 }
 
-class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin {
+class _TeachScreenState extends State<TeachScreen>
+    with TickerProviderStateMixin {
   final User? _user = FirebaseAuth.instance.currentUser;
   final GeminiService _geminiService = GeminiService();
   List<Color> _buttonColors = [];
@@ -77,16 +78,16 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     setState(() {
       _buttonColors = List.generate(
         initialLabels.length,
-            (index) => Colors.primaries[index % Colors.primaries.length][300]!,
+        (index) => Colors.primaries[index % Colors.primaries.length][300]!,
       );
       _buttonPositions = List.generate(
         initialLabels.length,
-            (index) => Offset((index % 3) * 120 + 30, (index ~/ 3) * 70 + 80),
+        (index) => Offset((index % 3) * 120 + 30, (index ~/ 3) * 70 + 80),
       );
       _buttonLabels = List.from(initialLabels);
       _buttonSizes = List.generate(
         initialLabels.length,
-            (index) => _calculateButtonSize(initialLabels[index]),
+        (index) => _calculateButtonSize(initialLabels[index]),
       );
     });
   }
@@ -101,8 +102,14 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     setState(() {
       double buttonWidth = _buttonSizes[index].width;
       double buttonHeight = _buttonSizes[index].height;
-      double newDx = newPosition.dx.clamp(0, MediaQuery.of(context).size.width - buttonWidth);
-      double newDy = newPosition.dy.clamp(0, MediaQuery.of(context).size.height - buttonHeight - 56); // Account for AppBar
+      double newDx = newPosition.dx.clamp(
+        0,
+        MediaQuery.of(context).size.width - buttonWidth,
+      );
+      double newDy = newPosition.dy.clamp(
+        0,
+        MediaQuery.of(context).size.height - buttonHeight - 56,
+      ); // Account for AppBar
       _buttonPositions[index] = Offset(newDx, newDy);
       _checkForCombination(index);
     });
@@ -115,18 +122,29 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     int? overlappingIndex;
 
     for (int i = 0; i < _buttonPositions.length; i++) {
-      if (i != index && _isOverlapping(currentPosition, _buttonPositions[i], index, i)) {
+      if (i != index &&
+          _isOverlapping(currentPosition, _buttonPositions[i], index, i)) {
         overlappingIndex = i;
         break;
       }
     }
 
     if (overlappingIndex != null) {
-      _triggerMergeAnimation(index, overlappingIndex, currentColor, currentLabel);
+      _triggerMergeAnimation(
+        index,
+        overlappingIndex,
+        currentColor,
+        currentLabel,
+      );
     }
   }
 
-  Future<void> _triggerMergeAnimation(int index1, int index2, Color currentColor, String currentLabel) async {
+  Future<void> _triggerMergeAnimation(
+    int index1,
+    int index2,
+    Color currentColor,
+    String currentLabel,
+  ) async {
     _scaleController.forward().then((_) => _scaleController.reverse());
     _pulseController.reset();
     _pulseController.forward();
@@ -137,8 +155,10 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     String newLabel = await _generateMeaningfulMerge(currentLabel, otherLabel);
 
     Color otherColor = _buttonColors[index2];
-    double newX = (_buttonPositions[index1].dx + _buttonPositions[index2].dx) / 2;
-    double newY = (_buttonPositions[index1].dy + _buttonPositions[index2].dy) / 2;
+    double newX =
+        (_buttonPositions[index1].dx + _buttonPositions[index2].dx) / 2;
+    double newY =
+        (_buttonPositions[index1].dy + _buttonPositions[index2].dy) / 2;
     Size newSize = _calculateButtonSize(newLabel);
     Offset newPosition = Offset(
       newX.clamp(0, MediaQuery.of(context).size.width - newSize.width),
@@ -152,7 +172,8 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
 
     if (mounted) {
       setState(() {
-        List<int> buttonsToRemove = [index1, index2]..sort((a, b) => b.compareTo(a));
+        List<int> buttonsToRemove = [index1, index2]
+          ..sort((a, b) => b.compareTo(a));
         for (int i in buttonsToRemove) {
           _buttonColors.removeAt(i);
           _buttonPositions.removeAt(i);
@@ -165,9 +186,9 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         _buttonLabels.add(newLabel);
         _buttonSizes.add(newSize);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Merged into: $newLabel")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Merged into: $newLabel")));
       });
     }
   }
@@ -189,15 +210,20 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
   }
 
   String _generateFallbackMerge(String label1, String label2) {
-    if ((label1 == "Slope" && label2 == "Intercept") || (label1 == "Intercept" && label2 == "Slope")) {
+    if ((label1 == "Slope" && label2 == "Intercept") ||
+        (label1 == "Intercept" && label2 == "Slope")) {
       return "Line Equation";
-    } else if ((label1 == "Error" && label2 == "Prediction") || (label1 == "Prediction" && label2 == "Error")) {
+    } else if ((label1 == "Error" && label2 == "Prediction") ||
+        (label1 == "Prediction" && label2 == "Error")) {
       return "Residual";
-    } else if ((label1 == "Data" && label2 == "Fit") || (label1 == "Fit" && label2 == "Data")) {
+    } else if ((label1 == "Data" && label2 == "Fit") ||
+        (label1 == "Fit" && label2 == "Data")) {
       return "Model";
-    } else if ((label1 == "Slope" && label2 == "Error") || (label1 == "Error" && label2 == "Slope")) {
+    } else if ((label1 == "Slope" && label2 == "Error") ||
+        (label1 == "Error" && label2 == "Slope")) {
       return "Slope Error";
-    } else if ((label1 == "Intercept" && label2 == "Error") || (label1 == "Error" && label2 == "Intercept")) {
+    } else if ((label1 == "Intercept" && label2 == "Error") ||
+        (label1 == "Error" && label2 == "Intercept")) {
       return "Intercept Error";
     } else {
       return "Regression Term";
@@ -211,22 +237,27 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
           "Provide a concise definition (1-2 sentences) of '$label' in the context of linear regression.";
       debugPrint("Sending explanation prompt to Gemini: $prompt");
       String explanation = await _geminiService.getGeminiResponse(prompt);
-      if (explanation.trim().isEmpty || explanation.toLowerCase().contains("error")) {
+      if (explanation.trim().isEmpty ||
+          explanation.toLowerCase().contains("error")) {
         explanation = _generateFallbackExplanation(label);
       }
       if (mounted) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-            content: Text(explanation),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
+          builder:
+              (context) => AlertDialog(
+                title: Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                content: Text(explanation),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("OK"),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       }
     } catch (e) {
@@ -235,16 +266,20 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         String fallbackExplanation = _generateFallbackExplanation(label);
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-            content: Text(fallbackExplanation),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("OK"),
+          builder:
+              (context) => AlertDialog(
+                title: Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                content: Text(fallbackExplanation),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("OK"),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       }
     }
@@ -285,8 +320,10 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     double buttonWidth2 = _buttonSizes[index2].width;
     double buttonHeight2 = _buttonSizes[index2].height;
     const double overlapThreshold = 20;
-    return (pos1.dx - pos2.dx).abs() < (buttonWidth1 + buttonWidth2) / 2 - overlapThreshold &&
-        (pos1.dy - pos2.dy).abs() < (buttonHeight1 + buttonHeight2) / 2 - overlapThreshold;
+    return (pos1.dx - pos2.dx).abs() <
+            (buttonWidth1 + buttonWidth2) / 2 - overlapThreshold &&
+        (pos1.dy - pos2.dy).abs() <
+            (buttonHeight1 + buttonHeight2) / 2 - overlapThreshold;
   }
 
   // Add element with random position
@@ -296,8 +333,12 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         Colors.primaries[_buttonColors.length % Colors.primaries.length][300]!,
       );
       // Randomize position within visible screen area
-      double maxWidth = MediaQuery.of(context).size.width - _calculateButtonSize(label).width;
-      double maxHeight = MediaQuery.of(context).size.height - _calculateButtonSize(label).height - 56; // Account for AppBar
+      double maxWidth =
+          MediaQuery.of(context).size.width - _calculateButtonSize(label).width;
+      double maxHeight =
+          MediaQuery.of(context).size.height -
+          _calculateButtonSize(label).height -
+          56; // Account for AppBar
       double randomX = Random().nextDouble() * maxWidth;
       double randomY = Random().nextDouble() * maxHeight;
       _buttonPositions.add(Offset(randomX, randomY));
@@ -314,7 +355,9 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
       debugPrint("Sending prompt to Gemini for new element: $prompt");
       String response = await _geminiService.getGeminiResponse(prompt);
       String newElementName = response.trim();
-      if (newElementName.isEmpty || newElementName.contains("Error") || newElementName.split(' ').length > 2) {
+      if (newElementName.isEmpty ||
+          newElementName.contains("Error") ||
+          newElementName.split(' ').length > 2) {
         newElementName = _generateFallbackNewElement(); // Handle Gemini errors
       }
       _addElement(newElementName);
@@ -420,19 +463,27 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         _onDragUpdate(index, newPosition);
       },
       child: AnimatedBuilder(
-        animation: Listenable.merge([_scaleController, _pulseController, _glowController]),
+        animation: Listenable.merge([
+          _scaleController,
+          _pulseController,
+          _glowController,
+        ]),
         builder: (context, child) {
           return Transform(
-            transform: Matrix4.identity()
-              ..scale(_scaleAnimation.value * _pulseAnimation.value)
-              ..rotateZ(_glowAnimation.value * 0.05),
+            transform:
+                Matrix4.identity()
+                  ..scale(_scaleAnimation.value * _pulseAnimation.value)
+                  ..rotateZ(_glowAnimation.value * 0.05),
             child: Container(
               width: _buttonSizes[index].width,
               height: _buttonSizes[index].height,
               decoration: BoxDecoration(
                 color: _buttonColors[index],
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.black.withOpacity(0.3), width: 1.5),
+                border: Border.all(
+                  color: Colors.black.withOpacity(0.3),
+                  width: 1.5,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
