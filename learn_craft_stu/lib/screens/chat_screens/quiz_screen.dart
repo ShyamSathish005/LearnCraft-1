@@ -289,6 +289,65 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         (pos1.dy - pos2.dy).abs() < (buttonHeight1 + buttonHeight2) / 2 - overlapThreshold;
   }
 
+  // Add element with random position
+  void _addElement(String label) {
+    setState(() {
+      _buttonColors.add(
+        Colors.primaries[_buttonColors.length % Colors.primaries.length][300]!,
+      );
+      // Randomize position within visible screen area
+      double maxWidth = MediaQuery.of(context).size.width - _calculateButtonSize(label).width;
+      double maxHeight = MediaQuery.of(context).size.height - _calculateButtonSize(label).height - 56; // Account for AppBar
+      double randomX = Random().nextDouble() * maxWidth;
+      double randomY = Random().nextDouble() * maxHeight;
+      _buttonPositions.add(Offset(randomX, randomY));
+      _buttonLabels.add(label);
+      _buttonSizes.add(_calculateButtonSize(label));
+    });
+  }
+
+  // Add new element via Gemini
+  Future<void> _addNewElement() async {
+    try {
+      final prompt =
+          "Suggest a new, meaningful element or concept in the domain of linear regression (e.g., machine learning, statistics). The element must be a single word or a concise two-word term (e.g., 'Gradient', 'R-Squared') that is a valid concept in linear regression. Respond with just the name of the new element or concept, no extra text. Examples: 'Gradient', 'R-Squared', 'Outlier', 'Variance', 'Bias'.";
+      debugPrint("Sending prompt to Gemini for new element: $prompt");
+      String response = await _geminiService.getGeminiResponse(prompt);
+      String newElementName = response.trim();
+      if (newElementName.isEmpty || newElementName.contains("Error") || newElementName.split(' ').length > 2) {
+        newElementName = _generateFallbackNewElement(); // Handle Gemini errors
+      }
+      _addElement(newElementName);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Added new element: $newElementName")),
+      );
+    } catch (e) {
+      debugPrint("Error adding new element: $e");
+      String newElementName = _generateFallbackNewElement();
+      _addElement(newElementName);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Added fallback element: $newElementName")),
+      );
+    }
+  }
+
+  String _generateFallbackNewElement() {
+    // Fallback new elements for linear regression
+    List<String> fallbackElements = [
+      "Gradient",
+      "R-Squared",
+      "Outlier",
+      "Variance",
+      "Bias",
+      "P-Value",
+      "T-Statistic",
+      "F-Statistic",
+      "Overfitting",
+      "Underfitting",
+    ];
+    return fallbackElements[Random().nextInt(fallbackElements.length)];
+  }
+
   @override
   void dispose() {
     _scaleController.dispose();
@@ -308,6 +367,13 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         backgroundColor: Colors.blue[900],
         foregroundColor: Colors.white,
         elevation: 4,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add, size: 20, color: Colors.white),
+            onPressed: _addNewElement,
+            tooltip: 'Add New Element',
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
