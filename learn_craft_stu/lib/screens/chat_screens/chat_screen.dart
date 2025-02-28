@@ -424,6 +424,19 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             ListTile(
               title: Text(
+                'Study Path',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.blue[900],
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.pushNamed(context, '/path'); // Navigate to DebugMenu
+              },
+            ),
+            ListTile(
+              title: Text(
                 'Debug Menu',
                 style: TextStyle(
                   fontFamily: 'Poppins',

@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:learn_craft_stu/screens/profile/ProfileScreen.dart';
+import 'package:learn_craft_stu/screens/study_path/study_path_screen.dart';
 import 'screens/authentication_screens/login_screen.dart';
 import 'screens/authentication_screens/register_screen.dart';
 import 'screens/authentication_screens/user_details_screen.dart';
@@ -60,6 +61,7 @@ class MyApp extends StatelessWidget {
         '/debug': (context) => const DebugMenu(), // Debug menu screen
         '/profile': (context) => const ProfileScreen(), // Profile screen
         '/quiz': (context) => const TeachScreen(),
+        '/path': (context) => const StudyPathScreen(),
               },
       theme: ThemeData(
         primaryColor: Colors.white, // White background
