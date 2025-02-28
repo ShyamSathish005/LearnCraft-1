@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../../services/gemini_service.dart';
 
 class TeachScreen extends StatefulWidget {
@@ -11,13 +12,15 @@ class TeachScreen extends StatefulWidget {
   State<TeachScreen> createState() => _TeachScreenState();
 }
 
-class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin {
+class _TeachScreenState extends State<TeachScreen>
+    with TickerProviderStateMixin {
   final User? _user = FirebaseAuth.instance.currentUser;
   String? _username;
   final GeminiService _geminiService = GeminiService();
   List<Color> _buttonColors = [];
   List<Offset> _buttonPositions = [];
   List<String> _buttonLabels = [];
+  List<Size> _buttonSizes = []; // To store dynamic sizes for each button
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
   late AnimationController _pulseController;
@@ -75,29 +78,31 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text("Authentication Required"),
-        content: Text("Please log in to use the teach screen."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            child: Text("OK"),
+      builder:
+          (context) => AlertDialog(
+            title: Text("Authentication Required"),
+            content: Text("Please log in to use the teach screen."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/login');
+                },
+                child: Text("OK"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   void _loadUserDetails() async {
     if (_user == null) return;
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_user!.uid)
-          .get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(_user!.uid)
+              .get();
       if (doc.exists) {
         if (mounted) {
           setState(() {
@@ -127,25 +132,44 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     setState(() {
       _buttonColors = List.generate(
         initialLabels.length,
-            (index) => Colors.primaries[index % Colors.primaries.length][200]!,
+        (index) => Colors.primaries[index % Colors.primaries.length][200]!,
       );
       _buttonPositions = List.generate(
         initialLabels.length,
-            (index) => Offset((index % 3) * 70 + 20, (index ~/ 3) * 40 + 20),
+        (index) => Offset((index % 3) * 110 + 20, (index ~/ 3) * 60 + 20),
       );
       _buttonLabels = List.from(initialLabels);
+      _buttonSizes = List.generate(
+        initialLabels.length,
+        (index) => _calculateButtonSize(initialLabels[index]),
+      );
     });
+  }
+
+  Size _calculateButtonSize(String label) {
+    // Base size for the button
+    double baseWidth = 100.0;
+    double baseHeight = 50.0;
+    // Adjust width based on text length (approximate)
+    double widthAdjustment =
+        label.length * 5.0; // Adjust width based on character count
+    double width = baseWidth + widthAdjustment;
+    width = width.clamp(baseWidth, 200.0); // Limit maximum width
+    return Size(width, baseHeight);
   }
 
   void _onDragUpdate(int index, Offset newPosition) {
     setState(() {
+      double buttonWidth = _buttonSizes[index].width;
+      double buttonHeight = _buttonSizes[index].height;
       double newDx = newPosition.dx.clamp(
         0,
-        MediaQuery.of(context).size.width - 60, // Match card width
+        MediaQuery.of(context).size.width - buttonWidth, // Match dynamic width
       );
       double newDy = newPosition.dy.clamp(
         0,
-        MediaQuery.of(context).size.height - 30, // Match card height
+        MediaQuery.of(context).size.height -
+            buttonHeight, // Match dynamic height
       );
       _buttonPositions[index] = Offset(newDx, newDy);
       _checkForCombination(index);
@@ -158,26 +182,23 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     int? overlappingIndex;
 
     for (int i = 0; i < _buttonPositions.length; i++) {
-      if (i != index && _isOverlapping(currentPosition, _buttonPositions[i])) {
+      if (i != index &&
+          _isOverlapping(currentPosition, _buttonPositions[i], index, i)) {
         overlappingIndex = i;
         break;
       }
     }
 
     if (overlappingIndex != null) {
-      _triggerMergeAnimation(
-        index,
-        overlappingIndex,
-        currentLabel,
-      );
+      _triggerMergeAnimation(index, overlappingIndex, currentLabel);
     }
   }
 
   Future<void> _triggerMergeAnimation(
-      int index1,
-      int index2,
-      String currentLabel,
-      ) async {
+    int index1,
+    int index2,
+    String currentLabel,
+  ) async {
     _scaleController.forward().then((_) => _scaleController.reverse());
     _pulseController.reset();
     _pulseController.forward();
@@ -190,11 +211,21 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     Color currentColor = _buttonColors[index1];
     Color otherColor = _buttonColors[index2];
 
-    double newX = (_buttonPositions[index1].dx + _buttonPositions[index2].dx) / 2;
-    double newY = (_buttonPositions[index1].dy + _buttonPositions[index2].dy) / 2;
+    double newX =
+        (_buttonPositions[index1].dx + _buttonPositions[index2].dx) / 2;
+    double newY =
+        (_buttonPositions[index1].dy + _buttonPositions[index2].dy) / 2;
     Offset newPosition = Offset(
-      newX.clamp(0, MediaQuery.of(context).size.width - 60),
-      newY.clamp(0, MediaQuery.of(context).size.height - 30),
+      newX.clamp(
+        0,
+        MediaQuery.of(context).size.width -
+            _calculateButtonSize(newLabel).width,
+      ),
+      newY.clamp(
+        0,
+        MediaQuery.of(context).size.height -
+            _calculateButtonSize(newLabel).height,
+      ),
     );
 
     int r = (currentColor.red + otherColor.red) ~/ 2;
@@ -204,39 +235,52 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
 
     if (mounted) {
       setState(() {
-        List<int> buttonsToRemove = [index1, index2]..sort((a, b) => b.compareTo(a));
+        List<int> buttonsToRemove = [index1, index2]
+          ..sort((a, b) => b.compareTo(a));
         for (int i in buttonsToRemove) {
           _buttonColors.removeAt(i);
           _buttonPositions.removeAt(i);
           _buttonLabels.removeAt(i);
+          _buttonSizes.removeAt(i);
         }
 
         _buttonColors.add(newColor);
         _buttonPositions.add(newPosition);
         _buttonLabels.add(newLabel);
+        _buttonSizes.add(_calculateButtonSize(newLabel));
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Merged into: $newLabel")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Merged into: $newLabel")));
       });
     }
   }
 
   Future<String> _generateMeaningfulMerge(String label1, String label2) async {
     try {
-      final prompt = "Combine '$label1' and '$label2' to create a new, meaningful element or concept in the domain of linear regression (e.g., machine learning, statistics). The result must be a single word or a concise two-word term (e.g., 'Feature Vector', 'Residual') that is a valid concept in linear regression. Do not concatenate the input labels or produce invalid terms. Respond with just the name of the new element or concept, no extra text. Examples: 'Data + Feature = Feature Vector', 'Model + Error = Residual', 'Feature + Model = Coefficient', 'Slope + Intercept = Line Equation'.";
+      final prompt =
+          "Combine '$label1' and '$label2' to create a new, meaningful element or concept in the domain of linear regression (e.g., machine learning, statistics). The result must be a single word or a concise two-word term (e.g., 'Feature Vector', 'Residual') that is a valid concept in linear regression. Do not concatenate the input labels or produce invalid terms. Respond with just the name of the new element or concept, no extra text. Examples: 'Data + Feature = Feature Vector', 'Model + Error = Residual', 'Feature + Model = Coefficient', 'Slope + Intercept = Line Equation'.";
       debugPrint("Sending prompt to Gemini: $prompt");
       String response = await _geminiService.getGeminiResponse(prompt);
       String newElementName = response.trim();
 
       // Validate the response: should be 1-2 words, no spaces beyond two words, and not a concatenation
-      if (newElementName.isEmpty || newElementName.contains("Error") || newElementName.split(' ').length > 2 || newElementName == "$label1$label2") {
-        return _generateFallbackMerge(label1, label2); // Handle invalid responses
+      if (newElementName.isEmpty ||
+          newElementName.contains("Error") ||
+          newElementName.split(' ').length > 2 ||
+          newElementName == "$label1$label2") {
+        return _generateFallbackMerge(
+          label1,
+          label2,
+        ); // Handle invalid responses
       }
       return newElementName;
     } catch (e) {
       debugPrint("Error generating merge: $e");
-      return _generateFallbackMerge(label1, label2); // Fallback to predefined merge
+      return _generateFallbackMerge(
+        label1,
+        label2,
+      ); // Fallback to predefined merge
     }
   }
 
@@ -283,11 +327,14 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
   Future<void> _explainButton(int index) async {
     String label = _buttonLabels[index];
     try {
-      final prompt = "Explain '$label' briefly as an element or concept in the context of linear regression. Provide a concise, meaningful explanation (1-2 sentences) that is accurate and relevant to linear regression.";
+      final prompt =
+          "Explain '$label' briefly as an element or concept in the context of linear regression. Provide a concise, meaningful explanation (1-2 sentences) that is accurate and relevant to linear regression.";
       debugPrint("Sending explanation prompt to Gemini: $prompt");
       String explanation = await _geminiService.getGeminiResponse(prompt);
       if (explanation.isEmpty || explanation.contains("Error")) {
-        explanation = _generateFallbackExplanation(label); // Handle Gemini errors
+        explanation = _generateFallbackExplanation(
+          label,
+        ); // Handle Gemini errors
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -350,28 +397,48 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
     }
   }
 
-  bool _isOverlapping(Offset pos1, Offset pos2) {
-    const double buttonSize = 60; // Match card width
+  bool _isOverlapping(Offset pos1, Offset pos2, int index1, int index2) {
+    // Use dynamic sizes for overlapping check
+    double buttonWidth1 = _buttonSizes[index1].width;
+    double buttonHeight1 = _buttonSizes[index1].height;
+    double buttonWidth2 = _buttonSizes[index2].width;
+    double buttonHeight2 = _buttonSizes[index2].height;
     const double overlapThreshold = 15;
-    return (pos1.dx - pos2.dx).abs() < buttonSize - overlapThreshold &&
-        (pos1.dy - pos2.dy).abs() < buttonSize - overlapThreshold;
+    return (pos1.dx - pos2.dx).abs() <
+            (buttonWidth1 + buttonWidth2) / 2 - overlapThreshold &&
+        (pos1.dy - pos2.dy).abs() <
+            (buttonHeight1 + buttonHeight2) / 2 - overlapThreshold;
   }
 
   void _addElement(String label) {
     setState(() {
-      _buttonColors.add(Colors.primaries[_buttonColors.length % Colors.primaries.length][200]!);
-      _buttonPositions.add(Offset(20, 20)); // Start at top-left, draggable
+      _buttonColors.add(
+        Colors.primaries[_buttonColors.length % Colors.primaries.length][200]!,
+      );
+      // Randomize position within visible screen area
+      double maxWidth =
+          MediaQuery.of(context).size.width - _calculateButtonSize(label).width;
+      double maxHeight =
+          MediaQuery.of(context).size.height -
+          _calculateButtonSize(label).height;
+      double randomX = Random().nextDouble() * maxWidth;
+      double randomY = Random().nextDouble() * maxHeight;
+      _buttonPositions.add(Offset(randomX, randomY));
       _buttonLabels.add(label);
+      _buttonSizes.add(_calculateButtonSize(label));
     });
   }
 
   Future<void> _addNewElement() async {
     try {
-      final prompt = "Suggest a new, meaningful element or concept in the domain of linear regression (e.g., machine learning, statistics). The element must be a single word or a concise two-word term (e.g., 'Gradient', 'R-Squared') that is a valid concept in linear regression. Respond with just the name of the new element or concept, no extra text. Examples: 'Gradient', 'R-Squared', 'Outlier', 'Variance', 'Bias'.";
+      final prompt =
+          "Suggest a new, meaningful element or concept in the domain of linear regression (e.g., machine learning, statistics). The element must be a single word or a concise two-word term (e.g., 'Gradient', 'R-Squared') that is a valid concept in linear regression. Respond with just the name of the new element or concept, no extra text. Examples: 'Gradient', 'R-Squared', 'Outlier', 'Variance', 'Bias'.";
       debugPrint("Sending prompt to Gemini for new element: $prompt");
       String response = await _geminiService.getGeminiResponse(prompt);
       String newElementName = response.trim();
-      if (newElementName.isEmpty || newElementName.contains("Error") || newElementName.split(' ').length > 2) {
+      if (newElementName.isEmpty ||
+          newElementName.contains("Error") ||
+          newElementName.split(' ').length > 2) {
         newElementName = _generateFallbackNewElement(); // Handle Gemini errors
       }
       _addElement(newElementName);
@@ -422,14 +489,15 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         backgroundColor: Colors.white,
         foregroundColor: Colors.blue[900],
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: Icon(Icons.menu, color: Colors.blue[900]),
-            onPressed: () {
-              if (_user != null) {
-                Scaffold.of(context).openDrawer();
-              }
-            },
-          ),
+          builder:
+              (context) => IconButton(
+                icon: Icon(Icons.menu, color: Colors.blue[900]),
+                onPressed: () {
+                  if (_user != null) {
+                    Scaffold.of(context).openDrawer();
+                  }
+                },
+              ),
         ),
         actions: [
           IconButton(
@@ -439,116 +507,137 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
           ),
         ],
       ),
-      drawer: _user != null
-          ? Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue[900],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Linear Regression Elements',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontFamily: 'Poppins',
+      drawer:
+          _user != null
+              ? Drawer(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    DrawerHeader(
+                      decoration: BoxDecoration(color: Colors.blue[900]),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Linear Regression Elements',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            _username ?? 'Loading...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    _username ?? 'Loading...',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontFamily: 'Poppins',
+                    ListTile(
+                      title: Text(
+                        'Add Slope',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                      onTap: () {
+                        _addElement("Slope");
+                        Navigator.pop(context);
+                      },
                     ),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              title: Text(
-                'Add Slope',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
-              ),
-              onTap: () {
-                _addElement("Slope");
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text(
-                'Add Intercept',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
-              ),
-              onTap: () {
-                _addElement("Intercept");
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text(
-                'Add Error',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
-              ),
-              onTap: () {
-                _addElement("Error");
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text(
-                'Add Prediction',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
-              ),
-              onTap: () {
-                _addElement("Prediction");
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text(
-                'Add Data',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
-              ),
-              onTap: () {
-                _addElement("Data");
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text(
-                'Add Fit',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.blue[900]),
-              ),
-              onTap: () {
-                _addElement("Fit");
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text(
-                'Clear All Elements',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.red[900]),
-              ),
-              onTap: () {
-                setState(() {
-                  _buttonColors.clear();
-                  _buttonPositions.clear();
-                  _buttonLabels.clear();
-                });
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      )
-          : null,
+                    ListTile(
+                      title: Text(
+                        'Add Intercept',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                      onTap: () {
+                        _addElement("Intercept");
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Add Error',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                      onTap: () {
+                        _addElement("Error");
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Add Prediction',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                      onTap: () {
+                        _addElement("Prediction");
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Add Data',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                      onTap: () {
+                        _addElement("Data");
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Add Fit',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                      onTap: () {
+                        _addElement("Fit");
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Clear All Elements',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Colors.red[900],
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _buttonColors.clear();
+                          _buttonPositions.clear();
+                          _buttonLabels.clear();
+                          _buttonSizes.clear();
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              )
+              : null,
       body: SafeArea(
         child: Stack(
           alignment: Alignment.center,
@@ -556,22 +645,23 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
             // Infinite scrolling background with constraints to prevent overflow
             SizedBox.expand(
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 5000), // Slow scroll effect
+                duration: const Duration(milliseconds: 5000),
+                // Slow scroll effect
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Colors.blue[100]!,
-                    ],
+                    colors: [Colors.blue[100]!],
                     stops: const [0.0, 0.3, 0.6, 1.0],
                   ),
                 ),
               ),
             ),
-            // Draggable buttons with overflow prevention and grid-like layout
+            // Draggable buttons with overflow prevention and dynamic sizing
             ...List.generate(_buttonColors.length, (index) {
-              if (index >= _buttonPositions.length || index >= _buttonLabels.length) {
+              if (index >= _buttonPositions.length ||
+                  index >= _buttonLabels.length ||
+                  index >= _buttonSizes.length) {
                 debugPrint("Index out of bounds in List.generate: $index");
                 return SizedBox.shrink(); // Prevent crashes due to mismatched lengths
               }
@@ -605,12 +695,13 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
         ]),
         builder: (context, child) {
           return Transform(
-            transform: Matrix4.identity()
-              ..scale(_scaleAnimation.value * _pulseAnimation.value)
-              ..rotateZ(_glowAnimation.value * 0.1),
+            transform:
+                Matrix4.identity()
+                  ..scale(_scaleAnimation.value * _pulseAnimation.value)
+                  ..rotateZ(_glowAnimation.value * 0.1),
             child: Container(
-              width: 60,
-              height: 30,
+              width: _buttonSizes[index].width,
+              height: _buttonSizes[index].height,
               decoration: BoxDecoration(
                 color: _buttonColors[index],
                 borderRadius: BorderRadius.circular(10),
@@ -630,10 +721,11 @@ class _TeachScreenState extends State<TeachScreen> with TickerProviderStateMixin
               child: Center(
                 child: Text(
                   _buttonLabels[index],
-                  style: const TextStyle(fontSize: 12, color: Colors.black),
+                  style: const TextStyle(fontSize: 16, color: Colors.black),
+                  // Increased text size
                   textAlign: TextAlign.center,
-                  softWrap: false,
-                  maxLines: 1,
+                  softWrap: true,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
