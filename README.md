@@ -1,4 +1,8 @@
-**Learn Edu 🎓🚀**:
+
+
+https://github.com/user-attachments/assets/cfc2a674-c2ed-4629-b5da-44d586ab2177
+
+**Learn Craft 🎓🚀**:
 A generative AI-powered learning platform that enhances education through interactive chat, quizzes, and personalized study paths.
 
 **📌Features**:
